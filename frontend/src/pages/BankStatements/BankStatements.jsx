@@ -9,6 +9,7 @@ import {
   createClientFromBankTransaction,
   createInvoiceFromBankTransaction,
   deleteBankStatement,
+  downloadBankStatementFile,
   getBankStatementById,
   getBankStatements,
   importBankStatementFile,
@@ -17,6 +18,7 @@ import {
   validateBankTransaction
 } from '../../services/bankStatement.service';
 import './BankStatements.css';
+import { formatMoney, formatDate, formatDateTime } from '../../utils/formatters';
 
 const emptyManualStatementForm = {
   file_name: '',
@@ -73,18 +75,6 @@ const emptyInvoiceForm = {
   adjustment_reason: 'Écart entre le total des articles et le montant reçu en banque.'
 };
 
-function formatDate(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return date.toLocaleDateString('fr-FR');
-}
-
 function formatDateInput(value) {
   if (!value) return '';
 
@@ -95,27 +85,6 @@ function formatDateInput(value) {
   }
 
   return date.toISOString().slice(0, 10);
-}
-
-function formatDateTime(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return date.toLocaleString('fr-FR');
-}
-
-function formatMoney(value) {
-  const number = Number(value || 0);
-
-  return new Intl.NumberFormat('fr-CA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(number);
 }
 
 function roundMoney(value) {
@@ -171,10 +140,27 @@ function buildFileUrl(fileUrl) {
     return fileUrl;
   }
 
+  if (fileUrl.startsWith('private/')) {
+    return null;
+  }
+
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   const backendBaseUrl = apiBaseUrl.replace(/\/api$/, '');
 
-  return `${backendBaseUrl}${fileUrl}`;
+  return `${backendBaseUrl}${fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`}`;
+}
+
+async function triggerBankStatementDownload(statement) {
+  const response = await downloadBankStatementFile(statement.id);
+  const blob = new Blob([response.data]);
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = statement.file_name || `bank-statement-${statement.id}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 function inferTransactionAmountAndType(form) {
@@ -1289,9 +1275,13 @@ export default function BankStatements() {
                           <button
                             type="button"
                             className="secondary-button"
-                            onClick={() => window.open(buildFileUrl(statement.file_url), '_blank')}
+                            onClick={() =>
+                              triggerBankStatementDownload(statement).catch(() => {
+                                alert('Impossible de télécharger le fichier.');
+                              })
+                            }
                           >
-                            Ouvrir fichier
+                            Télécharger
                           </button>
                         )}
 
@@ -1331,9 +1321,13 @@ export default function BankStatements() {
                 <button
                   type="button"
                   className="secondary-button"
-                  onClick={() => window.open(buildFileUrl(selectedStatement.file_url), '_blank')}
+                  onClick={() =>
+                    triggerBankStatementDownload(selectedStatement).catch(() => {
+                      alert('Impossible de télécharger le fichier.');
+                    })
+                  }
                 >
-                  Ouvrir fichier
+                  Télécharger
                 </button>
               )}
 

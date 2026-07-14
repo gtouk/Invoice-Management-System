@@ -4,6 +4,7 @@ import {
   getExchangeRate
 } from '../../services/commission.service';
 import './Commissions.css';
+import { formatMoney } from '../../utils/formatters';
 
 const defaultForm = {
   from_currency: 'XAF',
@@ -13,13 +14,6 @@ const defaultForm = {
   commission_mode: 'added',
   manual_rate: ''
 };
-
-function formatMoney(value, currency) {
-  return `${Number(value || 0).toLocaleString('fr-CA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })} ${currency}`;
-}
 
 function formatRate(value) {
   return Number(value || 0).toLocaleString('fr-CA', {

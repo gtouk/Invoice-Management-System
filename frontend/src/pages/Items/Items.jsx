@@ -7,6 +7,7 @@ import {
   updateItem
 } from '../../services/item.service';
 import './Items.css';
+import { formatMoney } from '../../utils/formatters';
 
 const emptyForm = {
   name: '',
@@ -15,13 +16,6 @@ const emptyForm = {
   non_member_price: '',
   member_price: ''
 };
-
-function formatMoney(value) {
-  return `${Number(value || 0).toLocaleString('fr-CA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })} CAD`;
-}
 
 function getItemTypeLabel(type) {
   return type === 'article' ? 'Article' : 'Service';

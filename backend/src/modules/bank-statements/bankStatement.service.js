@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import * as bankStatementRepository from './bankStatement.repository.js';
 import * as invoiceRepository from '../invoices/invoice.repository.js';
 import {
@@ -7,6 +8,7 @@ import {
   buildStoredFileUrl,
   resolveStoredFilePath
 } from '../../services/bankStatementParser.service.js';
+import { createAuditLog } from '../../utils/audit.util.js';
 import {
   validateBankStatementFilters,
   validateCreateBankStatementPayload,
@@ -41,11 +43,9 @@ function getTransactionCompanyId(transaction, userCompanyId) {
 }
 
 function ensureTransactionBelongsToCompany(transaction, companyId) {
-  if (!companyId) {
-    return;
-  }
+  requireCompanyId(companyId);
 
-  if (transaction.company_id && transaction.company_id !== companyId) {
+  if (!transaction?.company_id || transaction.company_id !== companyId) {
     throw createHttpError(
       'Cette transaction bancaire n’appartient pas à votre entreprise.',
       403
@@ -54,11 +54,14 @@ function ensureTransactionBelongsToCompany(transaction, companyId) {
 }
 
 export async function listBankStatements(queryParams = {}, companyId = null) {
+  requireCompanyId(companyId);
   const filters = validateBankStatementFilters(queryParams);
   return bankStatementRepository.findBankStatements(filters, companyId);
 }
 
 export async function getBankStatementById(id, companyId = null) {
+  requireCompanyId(companyId);
+
   const statement = await bankStatementRepository.findBankStatementById(
     id,
     companyId
@@ -120,7 +123,7 @@ export async function importBankStatementFile(
   return bankStatementRepository.createBankStatement({
     company_id: companyId,
     file_name: file.originalname,
-    file_url: buildStoredFileUrl(file.filename),
+    file_url: buildStoredFileUrl(file.filename, companyId),
     source_type: sourceType,
     imported_by: userId || null,
     notes: payload.notes || null
@@ -153,7 +156,10 @@ export async function processBankStatement(id, companyId) {
     );
   }
 
-  const filePath = resolveStoredFilePath(statement.file_url);
+  const filePath = resolveStoredFilePath(
+    statement.file_url,
+    statement.company_id || companyId
+  );
 
   if (!filePath || !fs.existsSync(filePath)) {
     throw createHttpError(
@@ -219,6 +225,8 @@ export async function processBankStatement(id, companyId) {
 }
 
 export async function deleteBankStatement(id, companyId = null) {
+  requireCompanyId(companyId);
+
   const statement = await bankStatementRepository.findBankStatementById(
     id,
     companyId
@@ -253,7 +261,10 @@ export async function deleteBankStatement(id, companyId = null) {
     );
 
   if (statement.file_url) {
-    const filePath = resolveStoredFilePath(statement.file_url);
+    const filePath = resolveStoredFilePath(
+    statement.file_url,
+    statement.company_id || companyId
+  );
 
     if (filePath && fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -268,6 +279,8 @@ export async function addTransactionToStatement(
   payload,
   companyId = null
 ) {
+  requireCompanyId(companyId);
+
   const statement =
     await bankStatementRepository.findBankStatementById(
       bankStatementId,
@@ -310,6 +323,8 @@ export async function listTransactionsByStatement(
   bankStatementId,
   companyId = null
 ) {
+  requireCompanyId(companyId);
+
   const statement =
     await bankStatementRepository.findBankStatementById(
       bankStatementId,
@@ -331,8 +346,13 @@ export async function correctTransaction(
   payload,
   companyId = null
 ) {
+  requireCompanyId(companyId);
+
   const transaction =
-    await bankStatementRepository.findBankTransactionById(transactionId);
+    await bankStatementRepository.findBankTransactionById(
+      transactionId,
+      companyId
+    );
 
   if (!transaction) {
     throw createHttpError('Transaction introuvable.', 404);
@@ -365,8 +385,13 @@ export async function matchTransactionClient(
   payload,
   companyId = null
 ) {
+  requireCompanyId(companyId);
+
   const transaction =
-    await bankStatementRepository.findBankTransactionById(transactionId);
+    await bankStatementRepository.findBankTransactionById(
+      transactionId,
+      companyId
+    );
 
   if (!transaction) {
     throw createHttpError('Transaction introuvable.', 404);
@@ -414,8 +439,13 @@ export async function createClientFromTransaction(
   userId,
   companyId = null
 ) {
+  requireCompanyId(companyId);
+
   const transaction =
-    await bankStatementRepository.findBankTransactionById(transactionId);
+    await bankStatementRepository.findBankTransactionById(
+      transactionId,
+      companyId
+    );
 
   if (!transaction) {
     throw createHttpError('Transaction introuvable.', 404);
@@ -478,8 +508,13 @@ export async function validateTransaction(
   userId,
   companyId = null
 ) {
+  requireCompanyId(companyId);
+
   const transaction =
-    await bankStatementRepository.findBankTransactionById(transactionId);
+    await bankStatementRepository.findBankTransactionById(
+      transactionId,
+      companyId
+    );
 
   if (!transaction) {
     throw createHttpError('Transaction introuvable.', 404);
@@ -521,8 +556,13 @@ export async function createInvoiceFromTransaction(
   userId,
   userCompanyId
 ) {
+  requireCompanyId(userCompanyId);
+
   const transaction =
-    await bankStatementRepository.findBankTransactionById(transactionId);
+    await bankStatementRepository.findBankTransactionById(
+      transactionId,
+      userCompanyId
+    );
 
   if (!transaction) {
     throw createHttpError('Transaction introuvable.', 404);
@@ -737,5 +777,65 @@ const invoice = await invoiceRepository.createInvoice({
       invoice_total: subtotalAmount,
       difference: finalDifference
     }
+  };
+}
+
+export async function downloadBankStatementFile(id, user, auditContext = {}) {
+  requireCompanyId(user?.company_id);
+
+  if (!['admin', 'company_admin', 'employee', 'super_admin'].includes(user.role)) {
+    throw createHttpError('Accès réservé aux utilisateurs internes.', 403);
+  }
+
+  const companyId = user.role === 'super_admin' ? null : user.company_id;
+  const statement = await bankStatementRepository.findBankStatementById(
+    id,
+    companyId
+  );
+
+  if (!statement) {
+    throw createHttpError('Relevé de compte introuvable.', 404);
+  }
+
+  if (
+    user.role !== 'super_admin' &&
+    statement.company_id !== user.company_id
+  ) {
+    throw createHttpError(
+      'Ce relevé n’appartient pas à votre entreprise.',
+      403
+    );
+  }
+
+  if (!statement.file_url) {
+    throw createHttpError('Aucun fichier associé à ce relevé.', 404);
+  }
+
+  const absolutePath = resolveStoredFilePath(
+    statement.file_url,
+    statement.company_id
+  );
+
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    throw createHttpError('Fichier du relevé introuvable sur le serveur.', 404);
+  }
+
+  await createAuditLog({
+    companyId: statement.company_id,
+    userId: user.id,
+    actorRole: user.role,
+    action: 'bank_statement_file_downloaded',
+    entityType: 'bank_statement',
+    entityId: statement.id,
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
+    metadata: {
+      file_name: statement.file_name || null
+    }
+  });
+
+  return {
+    absolutePath,
+    fileName: statement.file_name || path.basename(absolutePath)
   };
 }

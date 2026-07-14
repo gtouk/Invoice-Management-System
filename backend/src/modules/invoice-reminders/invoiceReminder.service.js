@@ -53,10 +53,8 @@ function renderTemplate(template, data) {
 }
 
 function buildTemplateData(invoice) {
-  const backendUrl = process.env.BACKEND_PUBLIC_URL || `http://localhost:${process.env.BACKEND_PORT || process.env.PORT || 5000}`;
-
-  const pdfUrl = invoice.pdf_url
-    ? `${backendUrl}${invoice.pdf_url}`
+  const pdfUrl = invoice.id
+    ? `/api/invoices/${invoice.id}/download`
     : '';
 
   return {

@@ -2,27 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getClientHistory } from '../../services/client.service';
 import './ClientHistory.css';
-
-function formatMoney(value) {
-  const number = Number(value || 0);
-
-  return new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(number);
-}
-
-function formatDate(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return date.toLocaleDateString('fr-FR');
-}
+import { formatMoney, formatDate } from '../../utils/formatters';
 
 function formatStatus(status) {
   const labels = {

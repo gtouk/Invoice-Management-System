@@ -40,6 +40,14 @@ export async function getInvoicePdf(id) {
   return response.data;
 }
 
+export async function downloadInvoicePdf(id) {
+  const response = await api.get(`/invoices/${id}/download`, {
+    responseType: 'blob'
+  });
+
+  return response;
+}
+
 export async function cancelInvoice(id, payload = {}) {
   const response = await api.patch(`/invoices/${id}/cancel`, payload);
   return response.data;

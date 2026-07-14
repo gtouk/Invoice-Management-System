@@ -1106,16 +1106,47 @@ export async function extractTextFromBankStatement(filePath, mimeType) {
   );
 }
 
-export function buildStoredFileUrl(filename) {
+export function buildStoredFileUrl(filename, companyId = null) {
+  if (companyId) {
+    return `private/companies/${companyId}/bank-statements/${filename}`;
+  }
+
+  // Legacy fallback path (old public storage layout)
   return `/storage/bank-statements/${filename}`;
 }
 
-export function resolveStoredFilePath(fileUrl) {
+export function resolveStoredFilePath(fileUrl, companyId = null) {
   if (!fileUrl) {
     return null;
   }
 
+  const normalized = String(fileUrl).replace(/^\/+/, '');
+
+  if (normalized.startsWith('private/')) {
+    return path.resolve(process.cwd(), 'storage', normalized);
+  }
+
+  if (normalized.startsWith('storage/')) {
+    return path.resolve(process.cwd(), normalized);
+  }
+
   const filename = path.basename(fileUrl);
+
+  if (companyId) {
+    const privateCandidate = path.resolve(
+      process.cwd(),
+      'storage',
+      'private',
+      'companies',
+      String(companyId),
+      'bank-statements',
+      filename
+    );
+
+    if (fs.existsSync(privateCandidate)) {
+      return privateCandidate;
+    }
+  }
 
   return path.join(BANK_STATEMENT_STORAGE_DIR, filename);
 }

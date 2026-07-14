@@ -14,5 +14,9 @@ export const env = {
   smtpPort: Number(process.env.SMTP_PORT || 587),
   smtpSecure: process.env.SMTP_SECURE === 'true',
   smtpUser: process.env.SMTP_USER,
-  smtpPassword: process.env.SMTP_PASSWORD,
+  smtpPassword: process.env.SMTP_PASSWORD || process.env.SMTP_PASS,
+  smtpFrom:
+    process.env.SMTP_FROM ||
+    process.env.SMTP_FROM_EMAIL ||
+    process.env.SMTP_USER,
 };

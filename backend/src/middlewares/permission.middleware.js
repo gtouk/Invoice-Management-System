@@ -9,6 +9,8 @@ export function requireAdmin(req, res, next) {
   return next();
 }
 
+export { requireSuperAdmin } from './superAdmin.middleware.js';
+
 export function requireInternalUser(req, res, next) {
   if (!req.user || !['admin', 'company_admin', 'employee'].includes(req.user.role)) {
     return res.status(403).json({

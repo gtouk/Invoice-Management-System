@@ -1,17 +1,37 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
-function createHttpError(message, statusCode = 400) {
+function createHttpError(message, statusCode = 400, extra = {}) {
   const error = new Error(message);
   error.statusCode = statusCode;
+  Object.assign(error, extra);
   return error;
 }
 
 function ensureSmtpConfigured() {
   if (!env.smtpHost || !env.smtpUser || !env.smtpPassword) {
     throw createHttpError(
-      'Configuration SMTP manquante. Veuillez configurer SMTP_HOST, SMTP_USER et SMTP_PASSWORD.',
-      500
+      "L'email n'a pas pu être envoyé. Vérifiez la configuration SMTP.",
+      502,
+      {
+        smtpDetail:
+          'Variables SMTP manquantes (SMTP_HOST, SMTP_USER, SMTP_PASSWORD/SMTP_PASS).'
+      }
+    );
+  }
+
+  if (
+    env.smtpHost === 'smtp.example.com' ||
+    env.smtpHost === 'localhost' ||
+    env.smtpHost.includes('example.')
+  ) {
+    throw createHttpError(
+      "L'email n'a pas pu être envoyé. Vérifiez la configuration SMTP.",
+      502,
+      {
+        smtpDetail:
+          `SMTP_HOST invalide (${env.smtpHost}). Remplacez-le par votre hôte Mailtrap/SMTP réel.`
+      }
     );
   }
 }
@@ -31,15 +51,9 @@ function createTransporter() {
 }
 
 function buildTechnicalFrom(fromName) {
-  /**
-   * Important :
-   * Beaucoup de SMTP refusent un from différent du SMTP_USER.
-   * On utilise donc SMTP_USER comme vrai expéditeur technique,
-   * et l’email de l’entreprise en Reply-To.
-   */
-  return fromName
-    ? `"${fromName}" <${env.smtpUser}>`
-    : env.smtpUser;
+  const fromAddress = env.smtpFrom || env.smtpUser;
+
+  return fromName ? `"${fromName}" <${fromAddress}>` : fromAddress;
 }
 
 export async function sendEmailWithAttachment({
@@ -52,23 +66,35 @@ export async function sendEmailWithAttachment({
   subject,
   text,
   html,
-  attachments = []
-}) {
+  attachments = [],
+  from
+} = {}) {
   const transporter = createTransporter();
+  const technicalFrom = from || buildTechnicalFrom(fromName);
 
-  const technicalFrom = buildTechnicalFrom(fromName);
+  try {
+    return await transporter.sendMail({
+      from: technicalFrom,
+      replyTo: replyTo || fromEmail || env.smtpFrom || env.smtpUser,
+      to,
+      cc: cc || undefined,
+      bcc: bcc || undefined,
+      subject,
+      text,
+      html: html || text,
+      attachments
+    });
+  } catch (error) {
+    console.error('[smtp] send failed:', error.code || '', error.message);
 
-  return transporter.sendMail({
-    from: technicalFrom,
-    replyTo: replyTo || fromEmail || env.smtpUser,
-    to,
-    cc: cc || undefined,
-    bcc: bcc || undefined,
-    subject,
-    text,
-    html,
-    attachments
-  });
+    throw createHttpError(
+      "L'email n'a pas pu être envoyé. Vérifiez la configuration SMTP.",
+      502,
+      {
+        smtpDetail: [error.code, error.message].filter(Boolean).join(': ')
+      }
+    );
+  }
 }
 
 export async function sendEmail({
@@ -80,20 +106,20 @@ export async function sendEmail({
   bcc,
   subject,
   text,
-  html
-}) {
-  const transporter = createTransporter();
-
-  const technicalFrom = buildTechnicalFrom(fromName);
-
-  return transporter.sendMail({
-    from: technicalFrom,
-    replyTo: replyTo || fromEmail || env.smtpUser,
+  html,
+  from
+} = {}) {
+  return sendEmailWithAttachment({
+    fromName,
+    fromEmail,
+    replyTo,
     to,
-    cc: cc || undefined,
-    bcc: bcc || undefined,
+    cc,
+    bcc,
     subject,
     text,
-    html: html || text
+    html,
+    from,
+    attachments: []
   });
 }

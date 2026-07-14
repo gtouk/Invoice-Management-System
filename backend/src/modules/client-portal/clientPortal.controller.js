@@ -19,6 +19,19 @@ export async function getSummary(req, res, next) {
   }
 }
 
+export async function getDashboard(req, res, next) {
+  try {
+    const data = await clientPortalService.getDashboard(req.user.id);
+    return successResponse(
+      res,
+      'Tableau de bord client récupéré avec succès.',
+      data
+    );
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listInvoices(req, res, next) {
   try {
     const data = await clientPortalService.listInvoices(req.user.id);
@@ -41,6 +54,19 @@ export async function getInvoicePdf(req, res, next) {
   try {
     const data = await clientPortalService.getInvoicePdf(req.user.id, req.params.id);
     return successResponse(res, 'PDF facture client', data);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function downloadInvoicePdf(req, res, next) {
+  try {
+    const result = await clientPortalService.downloadInvoicePdf(
+      req.user.id,
+      req.params.id
+    );
+
+    return res.download(result.absolutePath, result.fileName);
   } catch (err) {
     next(err);
   }

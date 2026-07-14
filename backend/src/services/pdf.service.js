@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import * as companySettingsRepository from '../modules/company-settings/companySettings.repository.js';
+import { buildInvoicePrivateRelativePath } from '../utils/storage.util.js';
 
 function ensureDirectoryExists(directoryPath) {
   if (!fs.existsSync(directoryPath)) {
@@ -668,12 +669,14 @@ export async function generateInvoicePdf(invoice) {
     invoice.company_id
   );
 
-  const storageDir = path.resolve(process.cwd(), 'storage', 'invoices');
-  ensureDirectoryExists(storageDir);
+  const relativePath = buildInvoicePrivateRelativePath(
+    invoice.company_id,
+    invoice.id
+  );
+  const filePath = path.resolve(process.cwd(), 'storage', relativePath);
+  ensureDirectoryExists(path.dirname(filePath));
 
-  const fileName = `${invoice.invoice_number}.pdf`;
-  const filePath = path.join(storageDir, fileName);
-  const publicUrl = `/storage/invoices/${fileName}`;
+  const fileName = `${invoice.invoice_number || invoice.id}.pdf`;
 
   const doc = new PDFDocument({
     size: 'A4',
@@ -708,6 +711,7 @@ export async function generateInvoicePdf(invoice) {
   return {
     fileName,
     filePath,
-    pdfUrl: publicUrl
+    pdfUrl: relativePath,
+    downloadUrl: `/api/invoices/${invoice.id}/download`
   };
 }

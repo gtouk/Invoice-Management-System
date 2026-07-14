@@ -181,7 +181,9 @@ INSERT INTO roles (name, description)
 VALUES
     ('admin', 'Administrateur du systeme'),
     ('employee', 'Employe avec permissions limitees'),
-    ('client', 'Client avec acces limite au portail client')
+    ('client', 'Client avec acces limite au portail client'),
+    ('super_admin', 'Administrateur plateforme SaaS'),
+    ('company_admin', 'Administrateur d''une entreprise inscrite')
 ON CONFLICT (name) DO NOTHING;
 
 

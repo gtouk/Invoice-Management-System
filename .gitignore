@@ -1,3 +1,33 @@
 .env
 backend/.env
 frontend/.env
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build / cache
+dist/
+build/
+.DS_Store
+*.log
+npm-debug.log*
+
+# Uploaded / generated files (keep directory placeholders)
+storage/invoices/**
+!storage/invoices/.gitkeep
+storage/bank-statements/**
+!storage/bank-statements/.gitkeep
+storage/company/**
+!storage/company/.gitkeep
+storage/private/**
+!storage/private/.gitkeep
+storage/exports/**
+!storage/exports/.gitkeep
+storage/ocr-temp/**
+!storage/ocr-temp/.gitkeep
+
+# IDE
+.idea/
+.vscode/

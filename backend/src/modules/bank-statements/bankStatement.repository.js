@@ -1,8 +1,12 @@
 import { query } from '../../database/db.js';
 
-export async function findBankStatements(filters = {}) {
-  const values = [];
-  const conditions = [];
+export async function findBankStatements(filters = {}, companyId = null) {
+  if (!companyId) {
+    throw new Error('companyId is required to list bank statements');
+  }
+
+  const values = [companyId];
+  const conditions = ['bs.company_id = $1'];
 
   if (filters.status) {
     values.push(filters.status);
@@ -19,13 +23,11 @@ export async function findBankStatements(filters = {}) {
     conditions.push(`bs.file_name ILIKE $${values.length}`);
   }
 
-  const whereClause =
-    conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
   const result = await query(
     `
       SELECT
         bs.id,
+        bs.company_id,
         bs.file_name,
         bs.file_url,
         bs.source_type,
@@ -39,7 +41,7 @@ export async function findBankStatements(filters = {}) {
       FROM bank_statements bs
       LEFT JOIN users u ON u.id = bs.imported_by
       LEFT JOIN bank_transactions bt ON bt.bank_statement_id = bs.id
-      ${whereClause}
+      WHERE ${conditions.join(' AND ')}
       GROUP BY bs.id, u.full_name
       ORDER BY bs.imported_at DESC
     `,
@@ -199,7 +201,15 @@ export async function createBankTransaction(data) {
   return result.rows[0];
 }
 
-export async function updateBankStatementStatus(id, status) {
+export async function updateBankStatementStatus(id, status, companyId = null) {
+  const values = [status, id];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND company_id = $${values.length}`;
+  }
+
   const result = await query(
     `
       UPDATE bank_statements
@@ -210,8 +220,10 @@ export async function updateBankStatementStatus(id, status) {
           ELSE processed_at
         END
       WHERE id = $2
+      ${companyClause}
       RETURNING
         id,
+        company_id,
         file_name,
         file_url,
         source_type,
@@ -221,44 +233,78 @@ export async function updateBankStatementStatus(id, status) {
         processed_at,
         notes
     `,
-    [status, id]
+    values
   );
 
   return result.rows[0] || null;
 }
 
-export async function countUsedTransactionsByStatementId(bankStatementId) {
+export async function countUsedTransactionsByStatementId(
+  bankStatementId,
+  companyId = null
+) {
+  const values = [bankStatementId];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND company_id = $${values.length}`;
+  }
+
   const result = await query(
     `
       SELECT COUNT(*)::int AS total
       FROM bank_transactions
       WHERE bank_statement_id = $1
         AND status = 'utilise'
+        ${companyClause}
     `,
-    [bankStatementId]
+    values
   );
 
   return result.rows[0].total;
 }
 
-export async function deleteTransactionsByStatementId(bankStatementId) {
+export async function deleteTransactionsByStatementId(
+  bankStatementId,
+  companyId = null
+) {
+  const values = [bankStatementId];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND company_id = $${values.length}`;
+  }
+
   await query(
     `
       DELETE FROM bank_transactions
       WHERE bank_statement_id = $1
         AND status <> 'utilise'
+        ${companyClause}
     `,
-    [bankStatementId]
+    values
   );
 }
 
-export async function deleteBankStatementById(id) {
+export async function deleteBankStatementById(id, companyId = null) {
+  const values = [id];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND company_id = $${values.length}`;
+  }
+
   const result = await query(
     `
       DELETE FROM bank_statements
       WHERE id = $1
+      ${companyClause}
       RETURNING
         id,
+        company_id,
         file_name,
         file_url,
         source_type,
@@ -268,7 +314,7 @@ export async function deleteBankStatementById(id) {
         processed_at,
         notes
     `,
-    [id]
+    values
   );
 
   return result.rows[0] || null;
@@ -294,11 +340,23 @@ export async function bulkCreateBankTransactions(
   return createdTransactions;
 }
 
-export async function findTransactionsByStatementId(bankStatementId) {
+export async function findTransactionsByStatementId(
+  bankStatementId,
+  companyId = null
+) {
+  const values = [bankStatementId];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND bt.company_id = $${values.length}`;
+  }
+
   const result = await query(
     `
       SELECT
         bt.id,
+        bt.company_id,
         bt.bank_statement_id,
         bt.extracted_client_name,
         bt.matched_client_id,
@@ -311,14 +369,14 @@ export async function findTransactionsByStatementId(bankStatementId) {
         bt.correction_notes,
         bt.validated_by,
         bt.transaction_type,
-bt.description,
-bt.withdrawal_amount,
-bt.deposit_amount,
-bt.balance_after,
-bt.invoice_id,
-bt.reconciliation_status,
-bt.reconciliation_difference,
-bt.reconciliation_notes,
+        bt.description,
+        bt.withdrawal_amount,
+        bt.deposit_amount,
+        bt.balance_after,
+        bt.invoice_id,
+        bt.reconciliation_status,
+        bt.reconciliation_difference,
+        bt.reconciliation_notes,
         u.full_name AS validated_by_name,
         bt.validated_at,
         bt.created_invoice_id,
@@ -330,19 +388,29 @@ bt.reconciliation_notes,
       LEFT JOIN users u ON u.id = bt.validated_by
       LEFT JOIN invoices i ON i.id = bt.created_invoice_id
       WHERE bt.bank_statement_id = $1
+      ${companyClause}
       ORDER BY bt.created_at DESC
     `,
-    [bankStatementId]
+    values
   );
 
   return result.rows;
 }
 
-export async function findBankTransactionById(id) {
+export async function findBankTransactionById(id, companyId = null) {
+  const values = [id];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND bt.company_id = $${values.length}`;
+  }
+
   const result = await query(
     `
       SELECT
         bt.id,
+        bt.company_id,
         bt.bank_statement_id,
         bt.extracted_client_name,
         bt.matched_client_id,
@@ -358,14 +426,14 @@ export async function findBankTransactionById(id) {
         bt.validated_at,
         bt.created_invoice_id,
         bt.transaction_type,
-bt.description,
-bt.withdrawal_amount,
-bt.deposit_amount,
-bt.balance_after,
-bt.invoice_id,
-bt.reconciliation_status,
-bt.reconciliation_difference,
-bt.reconciliation_notes,
+        bt.description,
+        bt.withdrawal_amount,
+        bt.deposit_amount,
+        bt.balance_after,
+        bt.invoice_id,
+        bt.reconciliation_status,
+        bt.reconciliation_difference,
+        bt.reconciliation_notes,
         i.invoice_number AS created_invoice_number,
         bt.created_at,
         bt.updated_at
@@ -374,9 +442,10 @@ bt.reconciliation_notes,
       LEFT JOIN users u ON u.id = bt.validated_by
       LEFT JOIN invoices i ON i.id = bt.created_invoice_id
       WHERE bt.id = $1
+      ${companyClause}
       LIMIT 1
     `,
-    [id]
+    values
   );
 
   return result.rows[0] || null;
@@ -454,7 +523,19 @@ export async function updateBankTransaction(id, companyId, data) {
   return result.rows[0] || null;
 }
 
-export async function matchTransactionClient(transactionId, clientId) {
+export async function matchTransactionClient(
+  transactionId,
+  clientId,
+  companyId = null
+) {
+  const values = [clientId, transactionId];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND company_id = $${values.length}`;
+  }
+
   const result = await query(
     `
       UPDATE bank_transactions
@@ -466,8 +547,10 @@ export async function matchTransactionClient(transactionId, clientId) {
         END,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $2
+      ${companyClause}
       RETURNING
         id,
+        company_id,
         bank_statement_id,
         extracted_client_name,
         matched_client_id,
@@ -483,16 +566,21 @@ export async function matchTransactionClient(transactionId, clientId) {
         created_at,
         updated_at
     `,
-    [clientId, transactionId]
+    values
   );
 
   return result.rows[0] || null;
 }
 
 export async function createClientFromTransaction(data) {
+  if (!data.company_id) {
+    throw new Error('company_id is required to create a client from a bank transaction');
+  }
+
   const result = await query(
     `
       INSERT INTO clients (
+        company_id,
         full_name,
         phone,
         email,
@@ -502,9 +590,10 @@ export async function createClientFromTransaction(data) {
         notes,
         created_by
       )
-      VALUES ($1, $2, $3, $4, $5, 'actif', $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, 'actif', $7, $8)
       RETURNING
         id,
+        company_id,
         user_id,
         client_code,
         full_name,
@@ -520,6 +609,7 @@ export async function createClientFromTransaction(data) {
         archived_at
     `,
     [
+      data.company_id,
       data.full_name,
       data.phone || null,
       data.email || null,
@@ -533,7 +623,15 @@ export async function createClientFromTransaction(data) {
   return result.rows[0];
 }
 
-export async function validateBankTransaction(id, userId) {
+export async function validateBankTransaction(id, userId, companyId = null) {
+  const values = [userId || null, id];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ` AND company_id = $${values.length}`;
+  }
+
   const result = await query(
     `
       UPDATE bank_transactions
@@ -543,8 +641,10 @@ export async function validateBankTransaction(id, userId) {
         validated_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $2
+      ${companyClause}
       RETURNING
         id,
+        company_id,
         bank_statement_id,
         extracted_client_name,
         matched_client_id,
@@ -560,7 +660,7 @@ export async function validateBankTransaction(id, userId) {
         created_at,
         updated_at
     `,
-    [userId || null, id]
+    values
   );
 
   return result.rows[0] || null;
@@ -630,6 +730,10 @@ export async function markTransactionUsedForInvoice(
 }
 
 export async function createBankStatement(data) {
+  if (!data.company_id) {
+    throw new Error('company_id is required to create a bank statement');
+  }
+
   const result = await query(
     `
       INSERT INTO bank_statements (

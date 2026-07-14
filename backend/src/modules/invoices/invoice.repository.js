@@ -354,6 +354,14 @@ export async function createInvoice(data) {
 }
 
 export async function findInvoiceById(id, companyId) {
+  const values = [id];
+  let companyClause = '';
+
+  if (companyId) {
+    values.push(companyId);
+    companyClause = ' AND i.company_id = $2';
+  }
+
   const invoiceResult = await query(
     `
       SELECT ${invoiceFields}
@@ -362,10 +370,10 @@ export async function findInvoiceById(id, companyId) {
         ON c.id = i.client_id
        AND c.company_id = i.company_id
       WHERE i.id = $1
-        AND i.company_id = $2
+      ${companyClause}
       LIMIT 1
     `,
-    [id, companyId]
+    values
   );
 
   const invoice = invoiceResult.rows[0];
@@ -509,16 +517,19 @@ export async function createInvoiceEmailLog(data) {
         subject,
         body,
         attachment_url,
+        attachment_path,
         attachment_name,
         status,
         error_message,
         sent_by,
-        sent_at
+        sent_at,
+        created_at
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11, $12, $13,
-        $14,
+        $8, $9, $10, $11, $12, $13, $14,
+        $15,
+        CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
       RETURNING
@@ -533,11 +544,13 @@ export async function createInvoiceEmailLog(data) {
         subject,
         body,
         attachment_url,
+        attachment_path,
         attachment_name,
         status,
         error_message,
         sent_by,
-        sent_at
+        sent_at,
+        created_at
     `,
     [
       data.company_id,
@@ -550,6 +563,7 @@ export async function createInvoiceEmailLog(data) {
       data.subject,
       data.body || null,
       data.attachment_url || null,
+      data.attachment_path || null,
       data.attachment_name || null,
       data.status,
       data.error_message || null,
@@ -574,18 +588,18 @@ export async function findInvoiceEmailLogs(invoiceId, companyId) {
         iel.bcc_email,
         iel.subject,
         iel.body,
-        iel.attachment_url,
         iel.attachment_name,
         iel.status,
         iel.error_message,
         iel.sent_by,
         u.full_name AS sent_by_name,
-        iel.sent_at
+        iel.sent_at,
+        COALESCE(iel.created_at, iel.sent_at) AS created_at
       FROM invoice_email_logs iel
       LEFT JOIN users u ON u.id = iel.sent_by
       WHERE iel.invoice_id = $1
         AND iel.company_id = $2
-      ORDER BY iel.sent_at DESC
+      ORDER BY COALESCE(iel.created_at, iel.sent_at) DESC
     `,
     [invoiceId, companyId]
   );

@@ -1,35 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   getInvoiceEmailLogs,
   prepareInvoiceEmail,
   sendInvoiceEmail
 } from '../../services/invoiceEmail.service';
+import { downloadInvoicePdf } from '../../services/invoice.service';
+import { formatDateTime } from '../../utils/formatters';
 import './InvoiceEmailModal.css';
-
-function buildFileUrl(fileUrl) {
-  if (!fileUrl) return null;
-
-  if (fileUrl.startsWith('http')) {
-    return fileUrl;
-  }
-
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  const backendBaseUrl = apiBaseUrl.replace(/\/api$/, '');
-
-  return `${backendBaseUrl}${fileUrl}`;
-}
-
-function formatDate(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return date.toLocaleString('fr-CA');
-}
 
 export default function InvoiceEmailModal({
   invoiceId,
@@ -53,12 +30,9 @@ export default function InvoiceEmailModal({
   const [activeTab, setActiveTab] = useState('compose');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
-  const attachmentUrl = useMemo(() => {
-    return buildFileUrl(prepared?.email?.attachment?.url);
-  }, [prepared]);
 
   async function loadEmailData() {
     if (!invoiceId) return;
@@ -80,14 +54,21 @@ export default function InvoiceEmailModal({
       setLogs(logsData);
 
       setForm({
-        from: preparedData.email?.from || '',
-        from_name: preparedData.email?.from_name || '',
-        to: preparedData.email?.to || '',
+        from: preparedData.email?.from || preparedData.company_settings?.company_email || '',
+        from_name:
+          preparedData.email?.from_name ||
+          preparedData.company_settings?.company_name ||
+          '',
+        to: preparedData.recipient_email || preparedData.email?.to || '',
         cc: preparedData.email?.cc || '',
         bcc: preparedData.email?.bcc || '',
-        subject: preparedData.email?.subject || '',
-        body: preparedData.email?.body || ''
+        subject: preparedData.subject || preparedData.email?.subject || '',
+        body: preparedData.body || preparedData.email?.body || ''
       });
+
+      if (preparedData.can_send === false) {
+        setError("Le PDF de cette facture n'est pas disponible.");
+      }
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -114,8 +95,41 @@ export default function InvoiceEmailModal({
     }));
   }
 
+  async function handleDownloadAttachment() {
+    if (!invoiceId) return;
+
+    setIsDownloading(true);
+    setError('');
+
+    try {
+      const response = await downloadInvoicePdf(invoiceId);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download =
+        prepared?.attachment_name || `facture-${invoiceId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          'Impossible de télécharger le PDF.'
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
   async function handleSend(event) {
     event.preventDefault();
+
+    if (prepared?.can_send === false) {
+      setError("Le PDF de cette facture n'est pas disponible.");
+      return;
+    }
 
     setIsSending(true);
     setError('');
@@ -128,28 +142,40 @@ export default function InvoiceEmailModal({
 
       const logsResponse = await getInvoiceEmailLogs(invoiceId);
       setLogs(logsResponse.data || []);
+      setActiveTab('history');
 
       if (onSent) {
-        onSent();
+        onSent({ success: true });
       }
     } catch (err) {
+      const backendMessage =
+        err.response?.data?.message ||
+        'Impossible d’envoyer l’email.';
       const apiErrors = err.response?.data?.errors;
+      const failedLog = Array.isArray(apiErrors)
+        ? apiErrors.find((item) => item?.error_message)
+        : null;
+      const detail = failedLog?.error_message;
 
-      if (Array.isArray(apiErrors) && apiErrors.length > 0) {
-        setError(
-          err.response?.data?.message ||
-            apiErrors.map((item) => item.error_message || item).join(' ')
-        );
-      } else {
-        setError(
-          err.response?.data?.message ||
-            'Impossible d’envoyer l’email.'
-        );
-      }
+      const status = err.response?.status;
+      const isSmtpIssue = status === 502 || /smtp/i.test(backendMessage);
+
+      setError(
+        [
+          backendMessage,
+          detail && detail !== backendMessage ? detail : null,
+          isSmtpIssue
+            ? 'Vérifiez SMTP_HOST / SMTP_USER / SMTP_PASSWORD dans .env, puis redémarrez le backend.'
+            : null
+        ]
+          .filter(Boolean)
+          .join(' ')
+      );
 
       try {
         const logsResponse = await getInvoiceEmailLogs(invoiceId);
         setLogs(logsResponse.data || []);
+        setActiveTab('history');
       } catch {
         // ignore refresh error
       }
@@ -161,6 +187,11 @@ export default function InvoiceEmailModal({
   if (!isOpen) {
     return null;
   }
+
+  const attachmentName =
+    prepared?.attachment_name ||
+    prepared?.email?.attachment?.name ||
+    null;
 
   return (
     <div className="email-modal-backdrop">
@@ -217,6 +248,7 @@ export default function InvoiceEmailModal({
               <span>À</span>
               <input
                 name="to"
+                type="email"
                 value={form.to}
                 onChange={handleChange}
                 placeholder="client@email.com"
@@ -226,7 +258,7 @@ export default function InvoiceEmailModal({
 
             <div className="email-two-columns">
               <label className="email-row">
-                <span>CC</span>
+                <span>Cc</span>
                 <input
                   name="cc"
                   value={form.cc}
@@ -236,7 +268,7 @@ export default function InvoiceEmailModal({
               </label>
 
               <label className="email-row">
-                <span>BCC</span>
+                <span>Bcc</span>
                 <input
                   name="bcc"
                   value={form.bcc}
@@ -247,7 +279,7 @@ export default function InvoiceEmailModal({
             </div>
 
             <label className="email-row">
-              <span>Objet</span>
+              <span>Sujet</span>
               <input
                 name="subject"
                 value={form.subject}
@@ -267,21 +299,30 @@ export default function InvoiceEmailModal({
               />
             </label>
 
-            {prepared?.email?.attachment && (
+            {attachmentName && (
               <div className="email-attachment-card">
                 <div>
                   <span className="attachment-icon">PDF</span>
                 </div>
 
                 <div>
-                  <strong>{prepared.email.attachment.name}</strong>
-                  <span>Pièce jointe automatiquement ajoutée</span>
+                  <strong>{attachmentName}</strong>
+                  <span>
+                    {prepared?.has_pdf
+                      ? 'Pièce jointe automatiquement ajoutée'
+                      : "PDF indisponible"}
+                  </span>
                 </div>
 
-                {attachmentUrl && (
-                  <a href={attachmentUrl} target="_blank" rel="noreferrer">
-                    Ouvrir
-                  </a>
+                {prepared?.has_pdf && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={handleDownloadAttachment}
+                    disabled={isDownloading}
+                  >
+                    {isDownloading ? '...' : 'Télécharger'}
+                  </button>
                 )}
               </div>
             )}
@@ -296,7 +337,10 @@ export default function InvoiceEmailModal({
                 Annuler
               </button>
 
-              <button type="submit" disabled={isSending}>
+              <button
+                type="submit"
+                disabled={isSending || prepared?.can_send === false}
+              >
                 {isSending ? 'Envoi en cours...' : 'Envoyer'}
               </button>
             </div>
@@ -319,10 +363,10 @@ export default function InvoiceEmailModal({
                     <span>
                       À : {log.recipient_email}
                     </span>
-                    {log.cc_email && <span>CC : {log.cc_email}</span>}
-                    {log.bcc_email && <span>BCC : {log.bcc_email}</span>}
+                    {log.cc_email && <span>Cc : {log.cc_email}</span>}
+                    {log.bcc_email && <span>Bcc : {log.bcc_email}</span>}
                     <small>
-                      {formatDate(log.sent_at)} · {log.sent_by_name || 'Utilisateur'}
+                      {formatDateTime(log.sent_at || log.created_at)} · {log.sent_by_name || 'Utilisateur'}
                     </small>
                   </div>
 

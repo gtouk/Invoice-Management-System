@@ -24,11 +24,13 @@ api.interceptors.response.use(
       status === 401 ||
       message === 'Token invalide ou expire' ||
       message === 'Token invalide ou expiré' ||
-      message === 'Utilisateur non connecte'
+      message === 'Utilisateur non connecte' ||
+      message === 'Votre entreprise est suspendue. Contactez le support.'
     ) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_role');
+      localStorage.removeItem('user');
 
       window.location.href = '/login';
     }

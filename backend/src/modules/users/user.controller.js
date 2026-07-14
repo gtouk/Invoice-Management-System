@@ -37,7 +37,8 @@ export async function createUser(req, res, next) {
     const user = await userService.createUser(
       req.body,
       req.user?.id,
-      req.user?.company_id
+      req.user?.company_id,
+      req.user?.role
     );
 
     return successResponse(
@@ -57,7 +58,8 @@ export async function updateUser(req, res, next) {
       req.params.id,
       req.body,
       req.user?.id,
-      req.user?.company_id
+      req.user?.company_id,
+      req.user?.role
     );
 
     return successResponse(

@@ -746,6 +746,29 @@ textarea.field-input {
 }
 .status-pill.status-annulee::before { background: var(--inv-border-strong); }
 
+.status-pill.status-overdue {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.status-pill.status-overdue::before {
+  background: #dc2626;
+}
+
+.inv-status-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.inv-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
 /* ─────────────────────────────────────────────
    Reminder Info Cell
 ───────────────────────────────────────────── */

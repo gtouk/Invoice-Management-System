@@ -7,6 +7,7 @@ import {
   updateClient
 } from '../../services/client.service';
 import './Clients.css';
+import { formatMoney } from '../../utils/formatters';
 
 const emptyForm = {
   client_type: 'particulier',
@@ -26,13 +27,6 @@ const emptyForm = {
   billing_phone: '',
   billing_address: ''
 };
-
-function formatMoney(value) {
-  return `${Number(value || 0).toLocaleString('fr-CA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })} $`;
-}
 
 function getClientName(client) {
   if (client.client_type === 'entreprise') {

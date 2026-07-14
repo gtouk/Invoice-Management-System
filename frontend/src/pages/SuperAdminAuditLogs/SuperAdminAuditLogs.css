@@ -1,0 +1,122 @@
+.sa-audit-page {
+  gap: 20px;
+}
+
+.sa-audit-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.sa-audit-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sa-audit-filters input,
+.sa-audit-filters select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 12px;
+  padding: 11px 12px;
+  outline: none;
+  font-size: 14px;
+}
+
+.sa-audit-filters input:focus,
+.sa-audit-filters select:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
+
+.sa-audit-filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.sa-audit-filter-actions button,
+.sa-audit-pagination button {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sa-audit-filter-actions button.secondary,
+.sa-audit-pagination button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.sa-audit-filter-actions button:disabled,
+.sa-audit-pagination button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sa-audit-table-panel .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.sa-audit-table-panel td {
+  vertical-align: top;
+}
+
+.sa-audit-table-panel td strong {
+  display: block;
+}
+
+.sa-audit-table-panel td small,
+.muted-id {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+.audit-details {
+  max-width: 280px;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sa-audit-table-panel code {
+  font-size: 12px;
+  background: #ecfdf5;
+  color: #115e59;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.sa-audit-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media (max-width: 1200px) {
+  .sa-audit-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sa-audit-filter-actions {
+    grid-column: 1 / -1;
+  }
+}

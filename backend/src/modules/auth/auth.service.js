@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query } from '../../database/db.js';
+import { query, withTransaction } from '../../database/db.js';
 import { env } from '../../config/env.js';
+import { createAuditLog } from '../../utils/audit.util.js';
 
 function signAccessToken(user) {
   return jwt.sign(
@@ -59,8 +60,42 @@ function normalizePaymentMethods(value) {
     .filter(Boolean);
 }
 
-function validateRegisterCompanyPayload(payload = {}) {
+function normalizeRegisterPayload(payload = {}) {
+  if (payload.admin || payload.company) {
+    return {
+      admin: payload.admin || {},
+      company: payload.company || {},
+      onboarding: payload.onboarding || {}
+    };
+  }
+
+  return {
+    admin: {
+      full_name: payload.admin_full_name,
+      email: payload.admin_email,
+      username: payload.admin_username,
+      phone: payload.admin_phone,
+      password: payload.admin_password,
+      password_confirmation:
+        payload.admin_password_confirmation || payload.admin_confirm_password
+    },
+    company: {
+      company_name: payload.company_name,
+      company_email: payload.company_email,
+      company_phone: payload.company_phone,
+      company_address: payload.company_address,
+      website: payload.website,
+      business_number: payload.business_number,
+      gst_hst_number: payload.gst_hst_number,
+      qst_number: payload.qst_number
+    },
+    onboarding: payload.onboarding || {}
+  };
+}
+
+function validateRegisterCompanyPayload(rawPayload = {}) {
   const errors = [];
+  const payload = normalizeRegisterPayload(rawPayload);
 
   const admin = payload.admin || {};
   const company = payload.company || {};
@@ -68,9 +103,11 @@ function validateRegisterCompanyPayload(payload = {}) {
 
   const adminFullName = normalizeText(admin.full_name);
   const adminEmail = normalizeText(admin.email)?.toLowerCase();
+  const adminUsername = normalizeText(admin.username)?.toLowerCase();
   const adminPhone = normalizeText(admin.phone);
   const password = admin.password || '';
-  const passwordConfirmation = admin.password_confirmation || admin.confirm_password || '';
+  const passwordConfirmation =
+    admin.password_confirmation || admin.confirm_password || '';
 
   const companyName = normalizeText(company.company_name);
   const companyEmail = normalizeText(company.company_email)?.toLowerCase();
@@ -109,6 +146,7 @@ function validateRegisterCompanyPayload(payload = {}) {
       admin: {
         full_name: adminFullName,
         email: adminEmail,
+        username: adminUsername,
         phone: adminPhone,
         password
       },
@@ -130,14 +168,21 @@ function validateRegisterCompanyPayload(payload = {}) {
         preferred_payment_methods: normalizePaymentMethods(
           onboarding.preferred_payment_methods
         ),
-        wants_payment_tracking: normalizeBoolean(onboarding.wants_payment_tracking),
-        wants_email_invoicing: normalizeBoolean(onboarding.wants_email_invoicing),
-        wants_bank_connection: normalizeBoolean(onboarding.wants_bank_connection),
+        wants_payment_tracking: normalizeBoolean(
+          onboarding.wants_payment_tracking ?? true
+        ),
+        wants_email_invoicing: normalizeBoolean(
+          onboarding.wants_email_invoicing ?? true
+        ),
+        wants_bank_connection: normalizeBoolean(
+          onboarding.wants_bank_connection
+        ),
         wants_bank_statement_import: normalizeBoolean(
           onboarding.wants_bank_statement_import
         ),
         default_currency: normalizeText(onboarding.default_currency) || 'CAD',
-        default_invoice_prefix: normalizeText(onboarding.default_invoice_prefix) || 'FAC',
+        default_invoice_prefix:
+          normalizeText(onboarding.default_invoice_prefix) || 'FAC',
         default_payment_terms:
           normalizeText(onboarding.default_payment_terms) ||
           'Payment due within 15 days.'
@@ -167,8 +212,27 @@ async function getAdminRoleId() {
   return result.rows[0];
 }
 
-async function ensureUniqueRegistrationEmail(email) {
-  const result = await query(
+async function ensureUniqueUsername(username, txQuery = query) {
+  const result = await txQuery(
+    `
+      SELECT id
+      FROM users
+      WHERE LOWER(username) = LOWER($1)
+      LIMIT 1
+    `,
+    [username]
+  );
+
+  if (result.rows[0]) {
+    throw createHttpError(
+      'Un utilisateur avec ce nom d’utilisateur existe déjà.',
+      409
+    );
+  }
+}
+
+async function ensureUniqueRegistrationEmail(email, txQuery = query) {
+  const result = await txQuery(
     `
       SELECT id
       FROM users
@@ -186,8 +250,8 @@ async function ensureUniqueRegistrationEmail(email) {
   }
 }
 
-async function ensureUniqueCompanyEmail(email) {
-  const result = await query(
+async function ensureUniqueCompanyEmail(email, txQuery = query) {
+  const result = await txQuery(
     `
       SELECT id
       FROM companies
@@ -205,7 +269,7 @@ async function ensureUniqueCompanyEmail(email) {
   }
 }
 
-async function generateUniqueUsername(email) {
+async function generateUniqueUsername(email, txQuery = query) {
   const [localPart, domainPart = 'company'] = email.split('@');
 
   const domainSlug = domainPart
@@ -222,7 +286,7 @@ async function generateUniqueUsername(email) {
   let counter = 1;
 
   while (true) {
-    const result = await query(
+    const result = await txQuery(
       `
         SELECT id
         FROM users
@@ -281,8 +345,32 @@ export async function login(identifier, password) {
     throw createHttpError('Compte desactive', 403);
   }
 
-  if (user.company_status && user.company_status !== 'active') {
-    throw createHttpError('Cette entreprise est suspendue ou inactive.', 403);
+  if (user.role_name !== 'super_admin') {
+    if (!user.company_id) {
+      throw createHttpError(
+        'Aucune entreprise associée à cet utilisateur.',
+        403
+      );
+    }
+
+    if (!user.company_status || user.company_status !== 'active') {
+      await createAuditLog({
+        companyId: user.company_id || null,
+        userId: user.id,
+        actorRole: user.role_name,
+        action: 'login_denied_company_suspended',
+        entityType: 'company',
+        entityId: user.company_id || null,
+        metadata: {
+          company_status: user.company_status || null
+        }
+      });
+
+      throw createHttpError(
+        'Votre entreprise est suspendue. Contactez le support.',
+        403
+      );
+    }
   }
 
   const passwordIsValid = await bcrypt.compare(password, user.password_hash);
@@ -319,208 +407,277 @@ export async function registerCompany(payload) {
   }
 
   const { admin, company, onboarding } = validation.data;
-
-  await ensureUniqueRegistrationEmail(admin.email);
-  await ensureUniqueCompanyEmail(company.company_email);
-
-  const role = await getAdminRoleId();
   const passwordHash = await bcrypt.hash(admin.password, 10);
 
-  const companyResult = await query(
-    `
-      INSERT INTO companies (
-        company_name,
-        company_email,
-        company_phone,
-        company_address,
-        website,
-        business_number,
-        gst_hst_number,
-        qst_number,
-        status,
-        created_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', CURRENT_TIMESTAMP)
-      RETURNING
-        id,
-        company_name,
-        company_email,
-        company_phone,
-        company_address,
-        website,
-        company_logo_url,
-        business_number,
-        gst_hst_number,
-        qst_number,
-        status,
-        created_at,
-        updated_at
-    `,
-    [
-      company.company_name,
-      company.company_email,
-      company.company_phone,
-      company.company_address,
-      company.website,
-      company.business_number,
-      company.gst_hst_number,
-      company.qst_number
-    ]
-  );
+  const result = await withTransaction(async (txQuery) => {
+    await ensureUniqueRegistrationEmail(admin.email, txQuery);
+    await ensureUniqueCompanyEmail(company.company_email, txQuery);
 
-  const createdCompany = companyResult.rows[0];
+    if (admin.username) {
+      await ensureUniqueUsername(admin.username, txQuery);
+    }
 
-  const settingsResult = await query(
-    `
-      INSERT INTO company_settings (
-        company_id,
-        company_name,
-        company_phone,
-        company_email,
-        company_address,
-        business_number,
-        gst_hst_number,
-        qst_number,
-        invoice_footer_note,
-        created_at,
-        updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Thank you for your business.', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      RETURNING
-        id,
-        company_id,
-        company_name,
-        company_logo_url,
-        company_phone,
-        company_email,
-        company_address,
-        business_number,
-        gst_hst_number,
-        qst_number,
-        invoice_footer_note,
-        bank_name,
-        bank_account_name,
-        bank_account,
-        bank_routing_number,
-        created_at,
-        updated_at
-    `,
-    [
-      createdCompany.id,
-      company.company_name,
-      company.company_phone,
-      company.company_email,
-      company.company_address,
-      company.business_number,
-      company.gst_hst_number,
-      company.qst_number
-    ]
-  );
+    const roleResult = await txQuery(
+      `
+        SELECT id, name
+        FROM roles
+        WHERE name IN ('company_admin', 'admin')
+        ORDER BY CASE WHEN name = 'company_admin' THEN 1 ELSE 2 END
+        LIMIT 1
+      `
+    );
 
-  const onboardingResult = await query(
-    `
-      INSERT INTO company_onboarding_profiles (
-        company_id,
-        industry,
-        business_description,
-        business_type,
-        invoice_volume,
-        preferred_payment_methods,
-        wants_payment_tracking,
-        wants_email_invoicing,
-        wants_bank_connection,
-        wants_bank_statement_import,
-        default_currency,
-        default_invoice_prefix,
-        default_payment_terms,
-        onboarding_completed,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10,
-        $11, $12, $13,
-        true,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-      )
-      RETURNING *
-    `,
-    [
-      createdCompany.id,
-      onboarding.industry,
-      onboarding.business_description,
-      onboarding.business_type,
-      onboarding.invoice_volume,
-      onboarding.preferred_payment_methods,
-      onboarding.wants_payment_tracking,
-      onboarding.wants_email_invoicing,
-      onboarding.wants_bank_connection,
-      onboarding.wants_bank_statement_import,
-      onboarding.default_currency,
-      onboarding.default_invoice_prefix,
-      onboarding.default_payment_terms
-    ]
-  );
+    const role = roleResult.rows[0];
 
-  const username = await generateUniqueUsername(admin.email);
+    if (!role) {
+      throw createHttpError(
+        'Aucun rôle admin disponible. Créez un rôle admin ou company_admin.',
+        500
+      );
+    }
 
-  const userResult = await query(
-    `
-      INSERT INTO users (
-        company_id,
-        full_name,
-        email,
+    const companyResult = await txQuery(
+      `
+        INSERT INTO companies (
+          company_name,
+          company_email,
+          company_phone,
+          company_address,
+          website,
+          business_number,
+          gst_hst_number,
+          qst_number,
+          status,
+          created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', CURRENT_TIMESTAMP)
+        RETURNING
+          id,
+          company_name,
+          company_email,
+          company_phone,
+          company_address,
+          website,
+          company_logo_url,
+          business_number,
+          gst_hst_number,
+          qst_number,
+          status,
+          created_at,
+          updated_at
+      `,
+      [
+        company.company_name,
+        company.company_email,
+        company.company_phone,
+        company.company_address,
+        company.website,
+        company.business_number,
+        company.gst_hst_number,
+        company.qst_number
+      ]
+    );
+
+    const createdCompany = companyResult.rows[0];
+
+    const settingsResult = await txQuery(
+      `
+        INSERT INTO company_settings (
+          company_id,
+          company_name,
+          company_phone,
+          company_email,
+          company_address,
+          business_number,
+          gst_hst_number,
+          qst_number,
+          invoice_footer_note,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8,
+          'Thank you for your business.',
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        RETURNING
+          id,
+          company_id,
+          company_name,
+          company_logo_url,
+          company_phone,
+          company_email,
+          company_address,
+          business_number,
+          gst_hst_number,
+          qst_number,
+          invoice_footer_note,
+          bank_name,
+          bank_account_name,
+          bank_account,
+          bank_routing_number,
+          created_at,
+          updated_at
+      `,
+      [
+        createdCompany.id,
+        company.company_name,
+        company.company_phone,
+        company.company_email,
+        company.company_address,
+        company.business_number,
+        company.gst_hst_number,
+        company.qst_number
+      ]
+    );
+
+    const onboardingResult = await txQuery(
+      `
+        INSERT INTO company_onboarding_profiles (
+          company_id,
+          industry,
+          business_description,
+          business_type,
+          invoice_volume,
+          preferred_payment_methods,
+          wants_payment_tracking,
+          wants_email_invoicing,
+          wants_bank_connection,
+          wants_bank_statement_import,
+          default_currency,
+          default_invoice_prefix,
+          default_payment_terms,
+          onboarding_completed,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, $10,
+          $11, $12, $13,
+          true,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        RETURNING *
+      `,
+      [
+        createdCompany.id,
+        onboarding.industry,
+        onboarding.business_description,
+        onboarding.business_type,
+        onboarding.invoice_volume,
+        onboarding.preferred_payment_methods,
+        onboarding.wants_payment_tracking,
+        onboarding.wants_email_invoicing,
+        onboarding.wants_bank_connection,
+        onboarding.wants_bank_statement_import,
+        onboarding.default_currency,
+        onboarding.default_invoice_prefix,
+        onboarding.default_payment_terms
+      ]
+    );
+
+    const username =
+      admin.username ||
+      (await generateUniqueUsername(admin.email, txQuery));
+
+    const userResult = await txQuery(
+      `
+        INSERT INTO users (
+          company_id,
+          full_name,
+          email,
+          username,
+          password_hash,
+          role_id,
+          status,
+          phone,
+          created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, 'actif', $7, CURRENT_TIMESTAMP)
+        RETURNING
+          id,
+          company_id,
+          full_name,
+          email,
+          username,
+          status,
+          created_at
+      `,
+      [
+        createdCompany.id,
+        admin.full_name,
+        admin.email,
         username,
-        password_hash,
-        role_id,
-        status,
-        phone,
-        created_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, 'actif', $7, CURRENT_TIMESTAMP)
-      RETURNING
-        id,
-        company_id,
-        full_name,
-        email,
-        username,
-        status,
-        created_at
-    `,
-    [
-      createdCompany.id,
-      admin.full_name,
-      admin.email,
-      username,
-      passwordHash,
-      role.id,
-      admin.phone
-    ]
-  );
+        passwordHash,
+        role.id,
+        admin.phone
+      ]
+    );
 
-  const createdUser = {
-    ...userResult.rows[0],
-    role_name: role.name,
-    company_name: createdCompany.company_name
-  };
+    try {
+      await txQuery(
+        `
+          INSERT INTO invoice_reminder_settings (
+            company_id,
+            enabled,
+            start_after_due_days,
+            frequency_days,
+            max_reminders,
+            send_time
+          )
+          VALUES ($1, true, 1, 7, NULL, '09:00')
+          ON CONFLICT (company_id) DO NOTHING
+        `,
+        [createdCompany.id]
+      );
+    } catch {
+      // Table may not exist on older DBs — registration should still succeed.
+    }
+
+    const createdUser = {
+      ...userResult.rows[0],
+      role_name: role.name,
+      company_name: createdCompany.company_name
+    };
+
+    return {
+      createdCompany,
+      settings: settingsResult.rows[0],
+      onboarding: onboardingResult.rows[0],
+      createdUser
+    };
+  });
+
+  await createAuditLog({
+    companyId: result.createdCompany.id,
+    userId: result.createdUser.id,
+    actorRole: result.createdUser.role_name,
+    action: 'company_registered',
+    entityType: 'company',
+    entityId: result.createdCompany.id,
+    metadata: {
+      company_email: result.createdCompany.company_email
+    }
+  });
 
   return {
-    access_token: signAccessToken(createdUser),
-    refresh_token: signRefreshToken(createdUser),
+    access_token: signAccessToken(result.createdUser),
+    refresh_token: signRefreshToken(result.createdUser),
     user: {
-      id: createdUser.id,
-      full_name: createdUser.full_name,
-      email: createdUser.email,
-      username: createdUser.username,
-      role: createdUser.role_name,
-      company_id: createdUser.company_id,
-      company_name: createdUser.company_name
+      id: result.createdUser.id,
+      full_name: result.createdUser.full_name,
+      email: result.createdUser.email,
+      username: result.createdUser.username,
+      role: result.createdUser.role_name,
+      company_id: result.createdUser.company_id,
+      company_name: result.createdUser.company_name
     },
-    company: createdCompany,
-    company_settings: settingsResult.rows[0],
-    onboarding: onboardingResult.rows[0]
+    company: result.createdCompany,
+    company_settings: result.settings,
+    onboarding: result.onboarding
   };
 }
 
@@ -554,8 +711,20 @@ export async function getCurrentUser(userId) {
     throw createHttpError('Utilisateur introuvable', 404);
   }
 
-  if (user.company_status && user.company_status !== 'active') {
-    throw createHttpError('Cette entreprise est suspendue ou inactive.', 403);
+  if (user.role !== 'super_admin') {
+    if (!user.company_id) {
+      throw createHttpError(
+        'Aucune entreprise associée à cet utilisateur.',
+        403
+      );
+    }
+
+    if (!user.company_status || user.company_status !== 'active') {
+      throw createHttpError(
+        'Votre entreprise est suspendue. Contactez le support.',
+        403
+      );
+    }
   }
 
   return {

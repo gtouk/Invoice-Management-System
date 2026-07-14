@@ -19,7 +19,7 @@ export async function registerCompany(req, res, next) {
 
     return successResponse(
       res,
-      'Espace entreprise créé avec succès',
+      'Compte entreprise créé avec succès.',
       result,
       201
     );

@@ -6,6 +6,7 @@ import {
   getPayments,
   getPaymentsByInvoice
 } from '../../services/payment.service';
+import { formatDate, formatMoney } from '../../utils/formatters';
 import './Payments.css';
 
 const initialPaymentForm = {
@@ -23,32 +24,12 @@ const paymentMethods = [
   { value: 'mobile_money', label: 'Mobile money' },
   { value: 'carte_bancaire', label: 'Carte bancaire' },
   { value: 'cheque', label: 'Chèque' },
-  { value: 'autre', label: 'Autre' }
+  { value: 'autre', label: 'Autre' },
+  { value: 'bank_transfer', label: 'Virement bancaire' }
 ];
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function formatMoney(value) {
-  const number = Number(value || 0);
-
-  return new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(number);
-}
-
-function formatDate(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return date.toLocaleDateString('fr-FR');
 }
 
 function formatStatus(status) {
@@ -60,12 +41,12 @@ function formatStatus(status) {
     annulee: 'Annulée'
   };
 
-  return labels[status] || status || '-';
+  return labels[status] || status || '—';
 }
 
 function formatPaymentMethod(method) {
   const found = paymentMethods.find((item) => item.value === method);
-  return found?.label || method || '-';
+  return found?.label || method || '—';
 }
 
 export default function Payments() {

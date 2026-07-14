@@ -6,6 +6,7 @@ import {
   updateReminderSettings
 } from '../../services/invoiceReminder.service';
 import './InvoiceReminderSettings.css';
+import { formatMoney, formatDate } from '../../utils/formatters';
 
 const defaultForm = {
   enabled: true,
@@ -20,27 +21,6 @@ const defaultForm = {
 
 function unwrapApiData(response) {
   return response?.data || response?.message?.data || null;
-}
-
-function formatMoney(value) {
-  const number = Number(value || 0);
-
-  return new Intl.NumberFormat('en-CA', {
-    style: 'currency',
-    currency: 'CAD'
-  }).format(number);
-}
-
-function formatDate(value) {
-  if (!value) return '—';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '—';
-  }
-
-  return date.toLocaleDateString('fr-CA');
 }
 
 export default function InvoiceReminderSettings() {

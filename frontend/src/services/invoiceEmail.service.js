@@ -6,7 +6,15 @@ export async function prepareInvoiceEmail(invoiceId) {
 }
 
 export async function sendInvoiceEmail(invoiceId, payload) {
-  const response = await api.post(`/invoices/${invoiceId}/send-email`, payload);
+  const response = await api.post(`/invoices/${invoiceId}/email/send`, {
+    to: payload.to,
+    cc: payload.cc || '',
+    bcc: payload.bcc || '',
+    subject: payload.subject,
+    body: payload.body,
+    from: payload.from,
+    from_name: payload.from_name
+  });
   return response.data;
 }
 

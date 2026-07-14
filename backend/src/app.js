@@ -17,11 +17,21 @@ import companySettingsRoutes from './modules/company-settings/companySettings.ro
 import reportRoutes from './modules/reports/report.routes.js';
 import commissionRoutes from './modules/commissions/commission.routes.js';
 import invoiceReminderRoutes from './modules/invoice-reminders/invoiceReminder.routes.js';
+import superAdminRoutes from './modules/super-admin/superAdmin.routes.js';
+import auditLogRoutes from './modules/audit-logs/auditLog.routes.js';
+import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import { startInvoiceReminderJob } from './jobs/invoiceReminder.job.js';
 
 const app = express();
 
-app.use('/storage', express.static(path.resolve(process.cwd(), 'storage')));
+app.use(
+  '/storage/company',
+  express.static(path.resolve(process.cwd(), 'storage', 'company'))
+);
+app.use(
+  '/storage/public',
+  express.static(path.resolve(process.cwd(), 'storage', 'public'))
+);
 
 app.use(helmet());
 app.use(cors());
@@ -44,6 +54,9 @@ app.use('/api/bank-statements', bankStatementRoutes);
 app.use('/api/company-settings', companySettingsRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/commissions', commissionRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 

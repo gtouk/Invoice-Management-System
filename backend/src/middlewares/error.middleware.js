@@ -6,5 +6,10 @@ export function notFoundMiddleware(req, res) {
 
 export function errorMiddleware(err, req, res, next) {
   console.error(err);
-  return errorResponse(res, err.message || 'Erreur serveur', err.statusCode || 500);
+  return errorResponse(
+    res,
+    err.message || 'Erreur serveur',
+    err.statusCode || 500,
+    err.errors || []
+  );
 }

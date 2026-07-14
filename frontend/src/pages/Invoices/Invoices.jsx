@@ -3,6 +3,7 @@ import {
   cancelInvoice,
   createInvoice,
   createPayment,
+  downloadInvoicePdf,
   generateInvoice,
   generateInvoicePdf,
   getClients,
@@ -16,6 +17,11 @@ import {
   sendInvoiceReminder
 } from '../../services/invoiceReminder.service';
 import InvoiceEmailModal from '../../components/InvoiceEmailModal/InvoiceEmailModal';
+import {
+  formatDate,
+  formatDateTime,
+  formatMoney
+} from '../../utils/formatters';
 import './Invoices.css';
 
 const emptyLine = {
@@ -43,7 +49,7 @@ const emptyForm = {
 const statusLabels = {
   brouillon: 'Brouillon',
   non_payee: 'Non payée',
-  partiellement_payee: 'Partiel',
+  partiellement_payee: 'Partiellement payée',
   payee: 'Payée',
   annulee: 'Annulée'
 };
@@ -75,33 +81,35 @@ function roundMoney(value) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 }
 
-function formatMoney(value) {
-  return `${Number(value || 0).toLocaleString('fr-CA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })} $`;
-}
-
-function formatDate(value) {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('fr-CA');
-}
-
-function formatDateTime(value) {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString('fr-CA');
-}
-
 function buildFileUrl(fileUrl) {
   if (!fileUrl) return null;
   if (fileUrl.startsWith('http')) return fileUrl;
+  if (fileUrl.startsWith('private/')) return null;
+  if (fileUrl.startsWith('/api/')) {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const backendBaseUrl = apiBaseUrl.replace(/\/api$/, '');
+    return `${backendBaseUrl}${fileUrl}`;
+  }
+  // Legacy public URLs only (logos). Invoice PDF private paths must use download API.
+  if (fileUrl.startsWith('/storage/invoices') || fileUrl.startsWith('storage/invoices')) {
+    return null;
+  }
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   const backendBaseUrl = apiBaseUrl.replace(/\/api$/, '');
-  return `${backendBaseUrl}${fileUrl}`;
+  return `${backendBaseUrl}${fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`}`;
+}
+
+async function triggerInvoicePdfDownload(invoice) {
+  const response = await downloadInvoicePdf(invoice.id);
+  const blob = new Blob([response.data], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `invoice-${invoice.invoice_number || invoice.id}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 function getClientDisplayName(client) {
@@ -118,6 +126,33 @@ function getInvoiceClientName(invoice) {
 
 function getStatusLabel(status) {
   return statusLabels[status] || status || '—';
+}
+
+function isInvoiceOverdue(invoice) {
+  if (!invoice?.due_date) return false;
+  if (!['non_payee', 'partiellement_payee'].includes(invoice.status)) return false;
+  const due = new Date(invoice.due_date);
+  if (Number.isNaN(due.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return due < today;
+}
+
+function canEmailInvoice(invoice) {
+  return Boolean(
+    invoice?.invoice_number &&
+      invoice.status !== 'brouillon' &&
+      invoice.status !== 'annulee'
+  );
+}
+
+function canDownloadInvoicePdf(invoice) {
+  return Boolean(
+    invoice &&
+      invoice.status !== 'brouillon' &&
+      invoice.status !== 'annulee'
+  );
 }
 
 function getPaymentMethodLabel(method) {
@@ -933,12 +968,25 @@ async function handleToggleInvoiceReminders(invoice) {
         <div className="inv-list">
           {invoices.length === 0 && (
             <div className="inv-empty">
-              {isLoading ? 'Chargement des factures…' : 'Aucune facture trouvée. Créez votre première facture.'}
+              {isLoading ? (
+                'Chargement des factures…'
+              ) : (
+                <div className="inv-empty-content">
+                  <p>Aucune facture trouvée.</p>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={openForm}
+                  >
+                    Créer une facture
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {invoices.map((invoice) => {
-            const pdfUrl = buildFileUrl(invoice.pdf_url);
+            const overdue = isInvoiceOverdue(invoice);
             const isBusy = busyInvoiceId === invoice.id;
             const canPay = invoice.status !== 'brouillon' && invoice.status !== 'annulee' && Number(invoice.balance_due || 0) > 0;
             const canSendReminder = canSendReminderForInvoice(invoice);
@@ -951,7 +999,7 @@ async function handleToggleInvoiceReminders(invoice) {
             return (
   <Fragment key={invoice.id}>
                 <div className="inv-row" key={invoice.id}>
-                  <div className={`inv-row-accent status-${invoice.status}`} />
+                  <div className={`inv-row-accent status-${invoice.status}${overdue ? ' overdue' : ''}`} />
 
                   <div className="inv-num">
                     <strong>{invoice.invoice_number || 'Brouillon'}</strong>
@@ -976,9 +1024,14 @@ async function handleToggleInvoiceReminders(invoice) {
                     </span>
                   </div>
 
-                  <span className={`status-pill status-${invoice.status}`}>
-                    {getStatusLabel(invoice.status)}
-                  </span>
+                  <div className="inv-status-stack">
+                    <span className={`status-pill status-${invoice.status}`}>
+                      {getStatusLabel(invoice.status)}
+                    </span>
+                    {overdue && (
+                      <span className="status-pill status-overdue">En retard</span>
+                    )}
+                  </div>
 
                   <div className="inv-reminder-info">
                     <span className={`reminder-auto-badge ${invoice.reminders_enabled === false ? 'off' : 'on'}`}>
@@ -1001,14 +1054,31 @@ async function handleToggleInvoiceReminders(invoice) {
                         PDF
                       </button>
                     )}
-                    {pdfUrl && (
-                      <a href={`${pdfUrl}?t=${Date.now()}`} target="_blank" rel="noreferrer" className="act-btn act-link">
-                        Ouvrir
-                      </a>
+                    {canDownloadInvoicePdf(invoice) && (
+                      <button
+                        type="button"
+                        className="act-btn act-link"
+                        disabled={isBusy}
+                        onClick={async () => {
+                          try {
+                            setBusyInvoiceId(invoice.id);
+                            await triggerInvoicePdfDownload(invoice);
+                          } catch (err) {
+                            setError(
+                              err.response?.data?.message ||
+                                'Impossible de télécharger le PDF.'
+                            );
+                          } finally {
+                            setBusyInvoiceId(null);
+                          }
+                        }}
+                      >
+                        Télécharger
+                      </button>
                     )}
-                    {invoice.invoice_number && (
+                    {canEmailInvoice(invoice) && (
                       <button type="button" className="act-btn" onClick={() => setEmailInvoiceId(invoice.id)} disabled={isBusy}>
-                        Email
+                        Envoyer par email
                       </button>
                     )}
                     {canSendReminder && (
@@ -1099,7 +1169,10 @@ async function handleToggleInvoiceReminders(invoice) {
         invoiceId={emailInvoiceId}
         isOpen={Boolean(emailInvoiceId)}
         onClose={() => setEmailInvoiceId(null)}
-        onSent={() => loadInvoices()}
+        onSent={() => {
+          setMessage('Facture envoyée par email avec succès.');
+          loadInvoices();
+        }}
       />
     </div>
   );

@@ -225,3 +225,22 @@ export async function createInvoiceFromTransaction(req, res, next) {
     next(error);
   }
 }
+
+export async function downloadBankStatementFile(req, res, next) {
+  try {
+    const result = await bankStatementService.downloadBankStatementFile(
+      req.params.id,
+      req.user,
+      {
+        ipAddress:
+          req.headers['x-forwarded-for']?.toString()?.split(',')[0]?.trim() ||
+          req.ip,
+        userAgent: req.headers['user-agent'] || null
+      }
+    );
+
+    return res.download(result.absolutePath, result.fileName);
+  } catch (error) {
+    next(error);
+  }
+}

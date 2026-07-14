@@ -1,101 +1,139 @@
 # Invoice Management System
 
-Systeme de gestion de facturation, paiements, clients, articles/services, commissions et releves de compte.
+Plateforme SaaS multi-entreprise de facturation, paiements, clients, articles/services, commissions et relevés bancaires.
 
-## Stack officielle V1 corrigee
+## Stack V1
 
-- Frontend: React + Vite
-- Backend: Node.js + Express
-- Base de donnees: PostgreSQL
-- Authentification: JWT + refresh token
-- API: REST JSON
-- PDF: generation cote backend
-- OCR: module separe a integrer plus tard
-- Conteneurisation: Docker + Docker Compose
-- Reverse proxy production: Nginx
-- Deploiement cible: VPS + SSL
-- Versioning: Git / GitHub
+- Frontend : React + Vite
+- Backend : Node.js + Express (ES Modules)
+- Base de données : PostgreSQL
+- Auth : JWT + refresh token
+- PDF : génération backend (pdfkit)
+- Email : Nodemailer / SMTP ou Mailtrap
+- Conteneurisation : Docker Compose
+- Reverse proxy production : Nginx
+
+## Prérequis
+
+- Docker
+- Docker Compose
+- (Optionnel) Node.js 22+ pour scripts hors Docker
+
+## Lancement
+
+```bash
+cp .env.example .env
+# Configurer SMTP et JWT si besoin
+
+docker compose down
+docker compose up --build
+```
+
+Ou en arrière-plan :
+
+```bash
+docker compose up -d --build
+```
+
+## URLs
+
+```txt
+Frontend : http://localhost:5173
+Backend  : http://localhost:5000
+API      : http://localhost:5000/api
+pgAdmin  : http://localhost:5050
+```
+
+Identifiants pgAdmin par défaut (selon `.env`) :
+
+```txt
+Email    : admin@invoice.local
+Mot de passe : admin
+```
+
+## Comptes de test
+
+Détails complets : [`docs/DEMO_ACCOUNTS.md`](docs/DEMO_ACCOUNTS.md)
+
+| Rôle | Identifiant | Mot de passe |
+|------|-------------|--------------|
+| Super Admin | `superadmin@invoice.com` | `SuperAdmin123!` |
+| Admin entreprise | `admin@invoice.com` | `admin123` |
+| Client portail | `portal.client.test@invoice.local` | `ClientTest123!` |
+
+Parcours démo :
+
+1. `/login` → Super Admin → `/super-admin/dashboard`
+2. `/login` → Admin NEA → `/admin/dashboard`
+3. `/login` → Client → `/client/dashboard`
+
+## Fonctionnalités V1
+
+- Multi-entreprise (SaaS) avec isolation `company_id`
+- Super Admin (stats, entreprises, suspension / activation, audit global)
+- Inscription entreprise transactionnelle (`/register-company`)
+- Clients, articles / services, utilisateurs internes
+- Factures PDF (stockage privé) + téléchargement sécurisé
+- Paiements
+- Relevés bancaires sécurisés
+- Envoi email facture + PDF privé + logs email
+- Audit logs admin entreprise + super admin
+- Dashboards admin / client / super admin
+- Rapports entreprise (résumé, revenus, top clients, etc.)
+- Portail client
+
+## SMTP
+
+Voir [`docs/SMTP_SETUP.md`](docs/SMTP_SETUP.md).
+
+Variables principales :
+
+```env
+SMTP_HOST=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM=no-reply@neankap.com
+SMTP_SECURE=false
+```
+
+## Notes sécurité
+
+- `/storage` global n’est plus public (seuls logos / public exposés)
+- PDF et relevés via endpoints authentifiés :
+  - `GET /api/invoices/:id/download`
+  - `GET /api/bank-statements/:id/file`
+  - `GET /api/client/invoices/:id/download`
+- Filtrage strict par `company_id` (et `client_id` côté portail)
+- Accès cross-company refusé (404 / 403)
 
 ## Structure
 
 ```text
-invoice-system/
+Invoice-Management-System/
 ├── backend/
-│   ├── Dockerfile
-│   └── src/
 ├── frontend/
-│   ├── Dockerfile
-│   └── src/
-├── database/
-│   └── migrations/
+├── database/migrations/
 ├── docs/
 ├── nginx/
-│   └── default.conf
 ├── storage/
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 └── .env.example
 ```
 
-## Demarrage rapide avec Docker
-
-1. Copier le fichier d'environnement :
-
-```bash
-cp .env.example .env
-```
-
-2. Lancer tous les services :
-
-```bash
-docker compose up --build
-```
-
-3. Acceder aux services :
-
-```text
-Frontend: http://localhost:5173
-Backend API: http://localhost:5000/api
-PostgreSQL: localhost:5432
-pgAdmin: http://localhost:5050
-```
-
-Identifiants pgAdmin par defaut :
-
-```text
-Email: admin@invoice.local
-Mot de passe: admin
-```
-
-## Services Docker
-
-```text
-frontend  -> React + Vite
-backend   -> Node.js + Express
-postgres  -> PostgreSQL 16
-pgadmin   -> Interface graphique PostgreSQL
-nginx     -> Reverse proxy pour la production
-```
-
 ## Commandes utiles
 
 ```bash
-# Demarrer en developpement
 docker compose up --build
-
-# Lancer en arriere-plan
 docker compose up -d --build
-
-# Voir les logs
-docker compose logs -f
-
-# Arreter les services
+docker compose logs -f backend
 docker compose down
-
-# Arreter et supprimer les volumes de donnees
-docker compose down -v
+docker compose down -v   # attention : efface les données Postgres
 ```
 
-## Premier objectif
+## Documentation
 
-Sprint 1: authentification, utilisateurs, roles, permissions et structure initiale du projet.
+- [`docs/DEMO_ACCOUNTS.md`](docs/DEMO_ACCOUNTS.md) — comptes et parcours démo
+- [`docs/SMTP_SETUP.md`](docs/SMTP_SETUP.md) — configuration email
+- [`docs/START_HERE.md`](docs/START_HERE.md) — démarrage projet

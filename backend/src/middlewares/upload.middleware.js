@@ -44,9 +44,32 @@ function sanitizeBaseName(originalName) {
     .slice(0, 80);
 }
 
+function getCompanyBankStatementDir(companyId) {
+  const directory = path.resolve(
+    process.cwd(),
+    'storage',
+    'private',
+    'companies',
+    String(companyId),
+    'bank-statements'
+  );
+
+  ensureDirectoryExists(directory);
+  return directory;
+}
+
 const bankStatementStorage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, BANK_STATEMENTS_DIR);
+    try {
+      if (!req.user?.company_id) {
+        cb(new Error('Aucune entreprise associée à cet utilisateur.'), null);
+        return;
+      }
+
+      cb(null, getCompanyBankStatementDir(req.user.company_id));
+    } catch (error) {
+      cb(error, null);
+    }
   },
 
   filename(req, file, cb) {

@@ -39,6 +39,7 @@ router.patch(
 );
 
 router.get('/:id', bankStatementController.getBankStatementById);
+router.get('/:id/file', bankStatementController.downloadBankStatementFile);
 router.delete('/:id', bankStatementController.deleteBankStatement);
 
 router.post('/:id/process', bankStatementController.processBankStatement);

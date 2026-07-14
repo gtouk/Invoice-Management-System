@@ -1,4 +1,9 @@
 import * as clientPortalRepository from './clientPortal.repository.js';
+import fs from 'fs';
+import {
+  resolveInvoicePdfAbsolutePath,
+  getInvoiceDownloadApiPath
+} from '../../utils/storage.util.js';
 
 function createHttpError(message, statusCode = 400) {
   const error = new Error(message);
@@ -47,6 +52,41 @@ export async function getSummary(userId) {
   };
 }
 
+export async function getDashboard(userId) {
+  const client = await getCurrentClientOrFail(userId);
+
+  if (!client.company_id) {
+    throw createHttpError('Entreprise client introuvable.', 404);
+  }
+
+  const [stats, recentInvoices, recentPayments] = await Promise.all([
+    clientPortalRepository.getClientDashboardStats(client.id, client.company_id),
+    clientPortalRepository.listRecentInvoicesForClient(
+      client.id,
+      client.company_id,
+      5
+    ),
+    clientPortalRepository.listRecentPaymentsForClient(
+      client.id,
+      client.company_id,
+      5
+    )
+  ]);
+
+  return {
+    invoices_count: Number(stats.invoices_count || 0),
+    paid_invoices_count: Number(stats.paid_invoices_count || 0),
+    unpaid_invoices_count: Number(stats.unpaid_invoices_count || 0),
+    partial_invoices_count: Number(stats.partial_invoices_count || 0),
+    overdue_invoices_count: Number(stats.overdue_invoices_count || 0),
+    total_invoiced: Number(stats.total_invoiced || 0),
+    total_paid: Number(stats.total_paid || 0),
+    total_balance_due: Number(stats.total_balance_due || 0),
+    recent_invoices: recentInvoices,
+    recent_payments: recentPayments
+  };
+}
+
 export async function listInvoices(userId) {
   const client = await getCurrentClientOrFail(userId);
   return clientPortalRepository.listInvoicesByClientId(client.id);
@@ -63,14 +103,30 @@ export async function getInvoice(userId, invoiceId) {
 
 export async function getInvoicePdf(userId, invoiceId) {
   const invoice = await getInvoice(userId, invoiceId);
-  if (!invoice.pdf_url) {
+  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+
+  if (!absolutePath) {
     throw createHttpError('PDF non disponible pour cette facture.', 404);
   }
 
   return {
     invoice_id: invoice.id,
     invoice_number: invoice.invoice_number,
-    pdf_url: invoice.pdf_url
+    download_url: getInvoiceDownloadApiPath(invoice.id)
+  };
+}
+
+export async function downloadInvoicePdf(userId, invoiceId) {
+  const invoice = await getInvoice(userId, invoiceId);
+  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    throw createHttpError('PDF non disponible pour cette facture.', 404);
+  }
+
+  return {
+    absolutePath,
+    fileName: `${invoice.invoice_number || invoice.id}.pdf`
   };
 }
 

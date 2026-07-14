@@ -95,3 +95,11 @@ export async function createInvoiceFromBankTransaction(transactionId, payload) {
 
   return response.data;
 }
+
+export async function downloadBankStatementFile(id) {
+  const response = await api.get(`/bank-statements/${id}/file`, {
+    responseType: 'blob'
+  });
+
+  return response;
+}

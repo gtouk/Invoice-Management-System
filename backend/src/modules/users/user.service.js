@@ -72,17 +72,32 @@ function validateUserPayload(payload = {}, { isCreate = true } = {}) {
   };
 }
 
-function ensureCanManageRole(role) {
-  /**
-   * Pour l’instant, on autorise seulement la création d’employés depuis l’interface entreprise.
-   * Cela évite qu’un admin entreprise crée d’autres admins sans contrôle.
-   */
-  if (role !== 'employee') {
+function ensureCanManageRole(role, actorRole = 'admin') {
+  if (['super_admin', 'client'].includes(role)) {
     throw createHttpError(
-      'Pour cette version, vous pouvez seulement créer ou modifier des utilisateurs avec le rôle employé.',
+      'Ce rôle ne peut pas être assigné depuis l’espace entreprise.',
       403
     );
   }
+
+  if (actorRole === 'company_admin') {
+    if (!['employee', 'admin', 'company_admin'].includes(role)) {
+      throw createHttpError('Rôle non autorisé.', 403);
+    }
+    return;
+  }
+
+  if (actorRole === 'admin') {
+    if (role !== 'employee') {
+      throw createHttpError(
+        'Un administrateur entreprise peut seulement créer des employés.',
+        403
+      );
+    }
+    return;
+  }
+
+  throw createHttpError('Permission insuffisante pour gérer les utilisateurs.', 403);
 }
 
 async function writeAuditLog({
@@ -134,7 +149,7 @@ export async function getUser(id, companyId) {
   return user;
 }
 
-export async function createUser(payload, currentUserId, companyId) {
+export async function createUser(payload, currentUserId, companyId, actorRole = 'admin') {
   requireCompanyId(companyId);
 
   const validation = validateUserPayload(payload, { isCreate: true });
@@ -145,7 +160,7 @@ export async function createUser(payload, currentUserId, companyId) {
 
   const data = validation.data;
 
-  ensureCanManageRole(data.role);
+  ensureCanManageRole(data.role, actorRole);
 
   const existing = await userRepository.findUserByEmailOrUsername({
     email: data.email,
@@ -193,7 +208,7 @@ export async function createUser(payload, currentUserId, companyId) {
   return userWithRole;
 }
 
-export async function updateUser(id, payload, currentUserId, companyId) {
+export async function updateUser(id, payload, currentUserId, companyId, actorRole = 'admin') {
   requireCompanyId(companyId);
 
   const existing = await userRepository.getUserWithRole(id, companyId);
@@ -210,7 +225,9 @@ export async function updateUser(id, payload, currentUserId, companyId) {
 
   const data = validation.data;
 
-  ensureCanManageRole(data.role);
+  if (data.role) {
+    ensureCanManageRole(data.role, actorRole);
+  }
 
   const duplicated = await userRepository.findUserByEmailOrUsername({
     email: data.email,

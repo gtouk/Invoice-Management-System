@@ -33,6 +33,23 @@
   margin-top: 3px;
 }
 
+.super-admin-user {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.super-admin-user strong,
+.super-admin-user small {
+  display: block;
+}
+
+.super-admin-user small {
+  margin-top: 4px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
 .super-admin-logo {
   width: 44px;
   height: 44px;

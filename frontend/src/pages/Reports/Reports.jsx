@@ -1,32 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getBusinessReports } from '../../services/report.service';
+import {
+  getInvoicesByStatus,
+  getPaymentsByMethod,
+  getReportsSummary,
+  getRevenueByMonth,
+  getTopClients
+} from '../../services/report.service';
+import {
+  formatDate,
+  formatMoney,
+  formatNumber,
+  formatPercent
+} from '../../utils/formatters';
 import './Reports.css';
+
+function toIsoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
 
 function getDefaultDateRange() {
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-
   return {
-    date_from: firstDay.toISOString().slice(0, 10),
-    date_to: today.toISOString().slice(0, 10)
+    start_date: toIsoDate(new Date(today.getFullYear(), today.getMonth(), 1)),
+    end_date: toIsoDate(today)
   };
-}
-
-function formatMoney(value) {
-  return `${Number(value || 0).toLocaleString('fr-CA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })} CAD`;
-}
-
-function formatDate(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return '-';
-
-  return date.toLocaleDateString('fr-CA');
 }
 
 function getStatusLabel(status) {
@@ -38,15 +35,21 @@ function getStatusLabel(status) {
     annulee: 'Annulée'
   };
 
-  return labels[status] || status || '-';
+  return labels[status] || status || '—';
 }
 
-function getClientName(item) {
-  if (item?.client_type === 'entreprise') {
-    return item.company_name || item.client_name || item.full_name || '-';
-  }
+function getPaymentMethodLabel(method) {
+  const labels = {
+    cash: 'Espèces',
+    virement_bancaire: 'Virement',
+    mobile_money: 'Mobile money',
+    carte_bancaire: 'Carte',
+    cheque: 'Chèque',
+    autre: 'Autre',
+    virement: 'Virement'
+  };
 
-  return item?.client_name || item?.full_name || '-';
+  return labels[method] || method || '—';
 }
 
 function StatCard({ label, value, helper, tone = 'default' }) {
@@ -61,10 +64,12 @@ function StatCard({ label, value, helper, tone = 'default' }) {
 
 export default function Reports() {
   const defaultDates = useMemo(() => getDefaultDateRange(), []);
-
   const [filters, setFilters] = useState(defaultDates);
-  const [reports, setReports] = useState(null);
-
+  const [summary, setSummary] = useState(null);
+  const [monthlyRevenue, setMonthlyRevenue] = useState([]);
+  const [invoicesByStatus, setInvoicesByStatus] = useState([]);
+  const [topClients, setTopClients] = useState([]);
+  const [paymentsByMethod, setPaymentsByMethod] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -72,10 +77,37 @@ export default function Reports() {
     setIsLoading(true);
     setError('');
 
+    const params = {
+      start_date: nextFilters.start_date || undefined,
+      end_date: nextFilters.end_date || undefined
+    };
+
     try {
-      const response = await getBusinessReports(nextFilters);
-      setReports(response.data);
+      const [
+        summaryResponse,
+        revenueResponse,
+        statusResponse,
+        clientsResponse,
+        methodsResponse
+      ] = await Promise.all([
+        getReportsSummary(params),
+        getRevenueByMonth(params),
+        getInvoicesByStatus(params),
+        getTopClients(params),
+        getPaymentsByMethod(params)
+      ]);
+
+      setSummary(summaryResponse.data || null);
+      setMonthlyRevenue(revenueResponse.data || []);
+      setInvoicesByStatus(statusResponse.data || []);
+      setTopClients(clientsResponse.data || []);
+      setPaymentsByMethod(methodsResponse.data || []);
     } catch (err) {
+      setSummary(null);
+      setMonthlyRevenue([]);
+      setInvoicesByStatus([]);
+      setTopClients([]);
+      setPaymentsByMethod([]);
       setError(
         err.response?.data?.message ||
           'Impossible de charger les rapports.'
@@ -91,11 +123,7 @@ export default function Reports() {
 
   function handleChange(event) {
     const { name, value } = event.target;
-
-    setFilters((current) => ({
-      ...current,
-      [name]: value
-    }));
+    setFilters((current) => ({ ...current, [name]: value }));
   }
 
   function handleSubmit(event) {
@@ -111,29 +139,22 @@ export default function Reports() {
       startDate = new Date(today.getFullYear(), today.getMonth(), 1);
     }
 
+    if (type === 'last_3_months') {
+      startDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    }
+
     if (type === 'year') {
       startDate = new Date(today.getFullYear(), 0, 1);
     }
 
-    if (type === 'last_30') {
-      startDate.setDate(today.getDate() - 30);
-    }
-
     const nextFilters = {
-      date_from: startDate.toISOString().slice(0, 10),
-      date_to: today.toISOString().slice(0, 10)
+      start_date: toIsoDate(startDate),
+      end_date: toIsoDate(today)
     };
 
     setFilters(nextFilters);
     loadReports(nextFilters);
   }
-
-  const summary = reports?.summary || {};
-  const invoicesByStatus = reports?.invoices_by_status || [];
-  const paymentsByMethod = reports?.payments_by_method || [];
-  const topClients = reports?.top_clients || [];
-  const unpaidInvoices = reports?.unpaid_invoices || [];
-  const monthlyRevenue = reports?.monthly_revenue || [];
 
   return (
     <div className="page-stack reports-page">
@@ -142,13 +163,13 @@ export default function Reports() {
           <span>Rapports entreprise</span>
           <h1>Analyse financière</h1>
           <p>
-            Suivez le chiffre d’affaires, les encaissements, les soldes impayés,
-            les clients importants et l’évolution mensuelle.
+            Chiffre d’affaires, encaissements, top clients et répartition par
+            statut ou méthode de paiement.
           </p>
         </div>
 
         <button type="button" onClick={() => loadReports()} disabled={isLoading}>
-          {isLoading ? 'Chargement...' : 'Actualiser'}
+          {isLoading ? 'Chargement…' : 'Actualiser'}
         </button>
       </div>
 
@@ -159,9 +180,9 @@ export default function Reports() {
           <label>
             Date début
             <input
-              name="date_from"
+              name="start_date"
               type="date"
-              value={filters.date_from}
+              value={filters.start_date}
               onChange={handleChange}
             />
           </label>
@@ -169,9 +190,9 @@ export default function Reports() {
           <label>
             Date fin
             <input
-              name="date_to"
+              name="end_date"
               type="date"
-              value={filters.date_to}
+              value={filters.end_date}
               onChange={handleChange}
             />
           </label>
@@ -180,11 +201,13 @@ export default function Reports() {
             <button type="button" className="secondary" onClick={() => setQuickRange('month')}>
               Ce mois
             </button>
-
-            <button type="button" className="secondary" onClick={() => setQuickRange('last_30')}>
-              30 jours
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setQuickRange('last_3_months')}
+            >
+              3 derniers mois
             </button>
-
             <button type="button" className="secondary" onClick={() => setQuickRange('year')}>
               Cette année
             </button>
@@ -196,72 +219,67 @@ export default function Reports() {
         </form>
       </section>
 
-      <section className="reports-stats-grid">
-        <StatCard
-          label="Total facturé"
-          value={formatMoney(summary.total_invoiced)}
-          helper={`${summary.invoices_count || 0} facture(s)`}
-          tone="blue"
-        />
+      {isLoading && !summary && <p className="empty-state">Chargement des rapports…</p>}
 
-        <StatCard
-          label="Total encaissé"
-          value={formatMoney(summary.total_paid)}
-          helper={`${summary.payments_count || 0} paiement(s)`}
-          tone="green"
-        />
-
-        <StatCard
-          label="Solde restant"
-          value={formatMoney(summary.total_balance_due)}
-          helper="Montant encore dû"
-          tone="red"
-        />
-
-        <StatCard
-          label="Facture moyenne"
-          value={formatMoney(summary.average_invoice_amount)}
-          helper="Moyenne sur la période"
-        />
-
-        <StatCard
-          label="Paiement moyen"
-          value={formatMoney(summary.average_payment_amount)}
-          helper="Moyenne des encaissements"
-        />
-
-        <StatCard
-          label="Factures impayées"
-          value={summary.unpaid_invoices_count || 0}
-          helper={`${summary.partial_invoices_count || 0} partielle(s)`}
-          tone="orange"
-        />
-      </section>
+      {summary && (
+        <section className="reports-stats-grid">
+          <StatCard
+            label="Total facturé"
+            value={formatMoney(summary.total_invoiced)}
+            helper={`${formatNumber(summary.invoices_count)} facture(s)`}
+            tone="blue"
+          />
+          <StatCard
+            label="Total encaissé"
+            value={formatMoney(summary.total_paid)}
+            helper={`${formatNumber(summary.payments_count)} paiement(s)`}
+            tone="green"
+          />
+          <StatCard
+            label="Solde restant"
+            value={formatMoney(summary.total_balance_due)}
+            helper="Hors factures annulées"
+            tone="red"
+          />
+          <StatCard
+            label="Facture moyenne"
+            value={formatMoney(summary.average_invoice_amount)}
+            helper="Sur la période"
+          />
+          <StatCard
+            label="Taux payé"
+            value={formatPercent(summary.paid_rate)}
+            helper="Factures entièrement payées"
+            tone="orange"
+          />
+          <StatCard
+            label="Période"
+            value={`${formatDate(summary.period?.start_date)} → ${formatDate(summary.period?.end_date)}`}
+            helper="Filtres appliqués"
+          />
+        </section>
+      )}
 
       <section className="reports-grid-two">
         <div className="panel">
           <div className="section-header">
             <div>
               <h2>Factures par statut</h2>
-              <p>Répartition des montants par état.</p>
+              <p>Répartition des montants.</p>
             </div>
           </div>
-
           <div className="report-list">
             {invoicesByStatus.length === 0 && (
               <p className="empty-state">Aucune facture sur cette période.</p>
             )}
-
             {invoicesByStatus.map((item) => (
               <div className="report-row" key={item.status}>
                 <div>
                   <strong>{getStatusLabel(item.status)}</strong>
-                  <span>{item.count} facture(s)</span>
+                  <span>{formatNumber(item.count)} facture(s)</span>
                 </div>
-
                 <div>
                   <strong>{formatMoney(item.total_amount)}</strong>
-                  <span>Solde : {formatMoney(item.balance_due)}</span>
                 </div>
               </div>
             ))}
@@ -272,24 +290,21 @@ export default function Reports() {
           <div className="section-header">
             <div>
               <h2>Paiements par méthode</h2>
-              <p>Analyse des moyens d’encaissement.</p>
+              <p>Moyens d’encaissement.</p>
             </div>
           </div>
-
           <div className="report-list">
             {paymentsByMethod.length === 0 && (
               <p className="empty-state">Aucun paiement sur cette période.</p>
             )}
-
             {paymentsByMethod.map((item) => (
-              <div className="report-row" key={item.payment_method}>
+              <div className="report-row" key={item.payment_method || 'none'}>
                 <div>
-                  <strong>{item.payment_method || '-'}</strong>
-                  <span>{item.count} paiement(s)</span>
+                  <strong>{getPaymentMethodLabel(item.payment_method)}</strong>
+                  <span>{formatNumber(item.count)} paiement(s)</span>
                 </div>
-
                 <div>
-                  <strong>{formatMoney(item.total_amount)}</strong>
+                  <strong>{formatMoney(item.total_paid)}</strong>
                 </div>
               </div>
             ))}
@@ -300,37 +315,30 @@ export default function Reports() {
       <section className="panel">
         <div className="section-header">
           <div>
-            <h2>Évolution mensuelle</h2>
-            <p>Facturation, encaissements et soldes par mois.</p>
+            <h2>Revenus par mois</h2>
+            <p>Facturation et encaissements.</p>
           </div>
         </div>
-
         <div className="reports-table-wrapper">
           <table>
             <thead>
               <tr>
                 <th>Mois</th>
-                <th>Factures</th>
                 <th>Total facturé</th>
-                <th>Total encaissé</th>
-                <th>Solde restant</th>
+                <th>Total payé</th>
               </tr>
             </thead>
-
             <tbody>
               {monthlyRevenue.length === 0 && (
                 <tr>
-                  <td colSpan="5">Aucune donnée mensuelle.</td>
+                  <td colSpan="3">Aucune donnée mensuelle.</td>
                 </tr>
               )}
-
               {monthlyRevenue.map((item) => (
                 <tr key={item.month}>
                   <td>{item.month}</td>
-                  <td>{item.invoices_count}</td>
                   <td>{formatMoney(item.total_invoiced)}</td>
                   <td>{formatMoney(item.total_paid)}</td>
-                  <td>{formatMoney(item.balance_due)}</td>
                 </tr>
               ))}
             </tbody>
@@ -338,88 +346,41 @@ export default function Reports() {
         </div>
       </section>
 
-      <section className="reports-grid-two">
-        <div className="panel">
-          <div className="section-header">
-            <div>
-              <h2>Top clients</h2>
-              <p>Clients avec le plus grand volume facturé.</p>
-            </div>
-          </div>
-
-          <div className="reports-table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Client</th>
-                  <th>Factures</th>
-                  <th>Facturé</th>
-                  <th>Payé</th>
-                  <th>Solde</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {topClients.length === 0 && (
-                  <tr>
-                    <td colSpan="5">Aucun client sur cette période.</td>
-                  </tr>
-                )}
-
-                {topClients.map((client) => (
-                  <tr key={client.id}>
-                    <td>{getClientName(client)}</td>
-                    <td>{client.invoices_count}</td>
-                    <td>{formatMoney(client.total_invoiced)}</td>
-                    <td>{formatMoney(client.total_paid)}</td>
-                    <td>{formatMoney(client.balance_due)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section className="panel">
+        <div className="section-header">
+          <div>
+            <h2>Top clients</h2>
+            <p>Volume facturé sur la période.</p>
           </div>
         </div>
-
-        <div className="panel">
-          <div className="section-header">
-            <div>
-              <h2>Factures impayées</h2>
-              <p>Factures à suivre ou relancer.</p>
-            </div>
-          </div>
-
-          <div className="reports-table-wrapper">
-            <table>
-              <thead>
+        <div className="reports-table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Factures</th>
+                <th>Facturé</th>
+                <th>Payé</th>
+                <th>Solde</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topClients.length === 0 && (
                 <tr>
-                  <th>Facture</th>
-                  <th>Client</th>
-                  <th>Échéance</th>
-                  <th>Solde</th>
+                  <td colSpan="5">Aucun client sur cette période.</td>
                 </tr>
-              </thead>
-
-              <tbody>
-                {unpaidInvoices.length === 0 && (
-                  <tr>
-                    <td colSpan="4">Aucune facture impayée.</td>
-                  </tr>
-                )}
-
-                {unpaidInvoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td>
-                      <strong>{invoice.invoice_number || '-'}</strong>
-                      <small>{getStatusLabel(invoice.status)}</small>
-                    </td>
-                    <td>{getClientName(invoice)}</td>
-                    <td>{formatDate(invoice.due_date)}</td>
-                    <td>{formatMoney(invoice.balance_due)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              )}
+              {topClients.map((client) => (
+                <tr key={client.client_id}>
+                  <td>{client.client_name}</td>
+                  <td>{formatNumber(client.invoices_count)}</td>
+                  <td>{formatMoney(client.total_invoiced)}</td>
+                  <td>{formatMoney(client.total_paid)}</td>
+                  <td>{formatMoney(client.balance_due)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

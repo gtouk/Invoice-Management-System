@@ -8,6 +8,7 @@ import {
   updateUserPassword
 } from '../../services/user.service';
 import './Users.css';
+import { formatDateTime } from '../../utils/formatters';
 
 const emptyForm = {
   full_name: '',
@@ -24,18 +25,6 @@ function getCurrentUser() {
   } catch {
     return null;
   }
-}
-
-function formatDate(value) {
-  if (!value) return '-';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return date.toLocaleString('fr-CA');
 }
 
 function getRoleLabel(role) {
@@ -481,9 +470,14 @@ export default function Users() {
                 name="role"
                 value={form.role}
                 onChange={handleFormChange}
-                disabled
               >
                 <option value="employee">Employé</option>
+                {currentUser?.role === 'company_admin' ? (
+                  <>
+                    <option value="admin">Administrateur</option>
+                    <option value="company_admin">Admin entreprise</option>
+                  </>
+                ) : null}
               </select>
             </label>
 
@@ -621,7 +615,7 @@ export default function Users() {
                       </span>
                     </td>
 
-                    <td>{formatDate(user.last_login_at)}</td>
+                    <td>{formatDateTime(user.last_login_at)}</td>
 
                     <td>
                       <div className="user-actions">

@@ -1,67 +1,110 @@
 import { useEffect, useState } from 'react';
-import { getClientInvoices, getClientInvoicePdf } from '../../services/clientPortal.service';
+import {
+  downloadClientInvoicePdf,
+  getClientInvoices
+} from '../../services/clientPortal.service';
+import { formatDate, formatMoney } from '../../utils/formatters';
+
+const statusLabels = {
+  brouillon: 'Brouillon',
+  non_payee: 'Non payée',
+  partiellement_payee: 'Partiellement payée',
+  payee: 'Payée',
+  annulee: 'Annulée'
+};
 
 export default function ClientInvoices() {
   const [invoices, setInvoices] = useState([]);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
+    setIsLoading(true);
     getClientInvoices()
       .then((response) => setInvoices(response.data || []))
-      .catch((err) => setError(err.response?.data?.message || 'Impossible de charger les factures.'));
+      .catch((err) =>
+        setError(
+          err.response?.data?.message ||
+            'Impossible de charger les factures.'
+        )
+      )
+      .finally(() => setIsLoading(false));
   }, []);
 
-  async function handlePdf(invoiceId) {
+  async function handlePdf(invoice) {
+    setBusyId(invoice.id);
+    setError('');
+
     try {
-      const response = await getClientInvoicePdf(invoiceId);
-      if (response.data?.pdf_url) {
-        window.open(response.data.pdf_url, '_blank');
-      }
+      await downloadClientInvoicePdf(invoice.id, invoice.invoice_number);
     } catch (err) {
-      alert(err.response?.data?.message || 'PDF non disponible.');
+      setError(err.response?.data?.message || 'PDF non disponible.');
+    } finally {
+      setBusyId(null);
     }
   }
 
-  if (error) return <div className="error-message">{error}</div>;
-
   return (
-    <div>
+    <div className="page-stack">
       <h1>Mes factures</h1>
+      <p>Consultez vos factures et téléchargez les PDF sécurisés.</p>
 
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Numero</th>
-            <th>Date</th>
-            <th>Total</th>
-            <th>Paye</th>
-            <th>Solde</th>
-            <th>Statut</th>
-            <th>PDF</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoices.map((invoice) => (
-            <tr key={invoice.id}>
-              <td>{invoice.invoice_number || '-'}</td>
-              <td>{invoice.issue_date || '-'}</td>
-              <td>{invoice.total_amount}</td>
-              <td>{invoice.paid_amount}</td>
-              <td>{invoice.balance_due}</td>
-              <td>{invoice.status}</td>
-              <td>
-                <button onClick={() => handlePdf(invoice.id)}>Voir PDF</button>
-              </td>
-            </tr>
-          ))}
+      {error && <div className="error-message">{error}</div>}
+      {isLoading && <p className="empty-state">Chargement…</p>}
 
-          {invoices.length === 0 && (
-            <tr>
-              <td colSpan="7">Aucune facture disponible.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {!isLoading && (
+        <div className="panel">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Date</th>
+                <th>Échéance</th>
+                <th>Total</th>
+                <th>Payé</th>
+                <th>Solde</th>
+                <th>Statut</th>
+                <th>PDF</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((invoice) => (
+                <tr key={invoice.id}>
+                  <td>{invoice.invoice_number || '—'}</td>
+                  <td>{formatDate(invoice.issue_date)}</td>
+                  <td>{formatDate(invoice.due_date)}</td>
+                  <td>{formatMoney(invoice.total_amount)}</td>
+                  <td>{formatMoney(invoice.paid_amount)}</td>
+                  <td>
+                    <strong>{formatMoney(invoice.balance_due)}</strong>
+                  </td>
+                  <td>{statusLabels[invoice.status] || invoice.status || '—'}</td>
+                  <td>
+                    {invoice.status !== 'brouillon' && invoice.status !== 'annulee' ? (
+                      <button
+                        type="button"
+                        disabled={busyId === invoice.id}
+                        onClick={() => handlePdf(invoice)}
+                      >
+                        {busyId === invoice.id ? '…' : 'Télécharger'}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {invoices.length === 0 && (
+                <tr>
+                  <td colSpan="8">Aucune facture disponible.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

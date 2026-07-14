@@ -1,7 +1,17 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    return null;
+  }
+}
+
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const user = getStoredUser();
+  const canViewAuditLogs = ['admin', 'company_admin'].includes(user?.role);
 
   function handleLogout() {
     localStorage.removeItem('access_token');
@@ -26,6 +36,9 @@ export default function AdminLayout() {
           <Link to="/admin/users">Utilisateurs</Link>
           <Link to="/admin/invoice-reminders"> Rappels de paiement </Link>
           <Link to="/admin/company-settings"> Paramètres entreprise </Link>
+          {canViewAuditLogs && (
+            <Link to="/admin/audit-logs">Audit logs</Link>
+          )}
         </nav>
       </aside>
 

@@ -8,6 +8,13 @@ import {
   validateCreateInvoicePayload,
   validateInvoiceFilters
 } from './invoice.validation.js';
+import {
+  getInvoiceDownloadApiPath,
+  resolveInvoicePdfAbsolutePath,
+  resolveStoragePath
+} from '../../utils/storage.util.js';
+import { createAuditLog } from '../../utils/audit.util.js';
+import * as clientPortalRepository from '../client-portal/clientPortal.repository.js';
 
 function createHttpError(message, statusCode = 400, errors = []) {
   const error = new Error(message);
@@ -307,7 +314,8 @@ export async function generateInvoicePdf(id, companyId) {
 
   return {
     invoice: updatedInvoice,
-    pdf_url: pdfResult.pdfUrl
+    pdf_url: pdfResult.pdfUrl,
+    download_url: getInvoiceDownloadApiPath(id)
   };
 }
 
@@ -320,7 +328,9 @@ export async function getInvoicePdf(id, companyId) {
     throw createHttpError('Facture introuvable.', 404);
   }
 
-  if (!invoice.pdf_url) {
+  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+
+  if (!absolutePath) {
     throw createHttpError(
       'PDF non disponible pour cette facture.',
       404
@@ -329,28 +339,95 @@ export async function getInvoicePdf(id, companyId) {
 
   return {
     invoice_number: invoice.invoice_number,
-    pdf_url: invoice.pdf_url
+    pdf_url: invoice.pdf_url,
+    download_url: getInvoiceDownloadApiPath(id)
   };
 }
 
-function buildBackendStoragePath(publicUrl) {
-  if (!publicUrl) {
-    return null;
+export async function downloadInvoicePdf(id, user, auditContext = {}) {
+  if (!user?.role) {
+    throw createHttpError('Utilisateur non authentifié.', 401);
   }
 
-  return path.resolve(process.cwd(), publicUrl.replace(/^\/+/, ''));
+  let invoice = null;
+
+  if (user.role === 'super_admin') {
+    invoice = await invoiceRepository.findInvoiceById(id, null);
+  } else if (['admin', 'company_admin', 'employee'].includes(user.role)) {
+    requireCompanyId(user.company_id);
+    invoice = await invoiceRepository.findInvoiceById(id, user.company_id);
+  } else if (user.role === 'client') {
+    const client = await clientPortalRepository.findClientByUserId(user.id);
+
+    if (!client) {
+      throw createHttpError('Aucun dossier client lié à ce compte.', 404);
+    }
+
+    const clientInvoice = await clientPortalRepository.findInvoiceForClient(
+      id,
+      client.id
+    );
+
+    if (!clientInvoice) {
+      throw createHttpError('Facture introuvable.', 404);
+    }
+
+    invoice = clientInvoice;
+  } else {
+    throw createHttpError('Permission insuffisante.', 403);
+  }
+
+  if (!invoice) {
+    throw createHttpError('Facture introuvable.', 404);
+  }
+
+  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    throw createHttpError('PDF non disponible pour cette facture.', 404);
+  }
+
+  await createAuditLog({
+    companyId: invoice.company_id || user.company_id || null,
+    userId: user.id,
+    actorRole: user.role,
+    action: 'invoice_pdf_downloaded',
+    entityType: 'invoice',
+    entityId: invoice.id,
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
+    metadata: {
+      invoice_number: invoice.invoice_number || null
+    }
+  });
+
+  return {
+    absolutePath,
+    fileName: `${invoice.invoice_number || invoice.id}.pdf`
+  };
 }
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getClientDisplayNameForEmail(invoice) {
   if (invoice.client_type === 'entreprise') {
-    return invoice.company_name || invoice.client_name || 'client';
+    return (
+      invoice.company_name ||
+      invoice.contact_person_name ||
+      invoice.client_name ||
+      'Client'
+    );
   }
 
-  return invoice.client_name || 'client';
+  return invoice.client_name || invoice.full_name || 'Client';
 }
 
 function getClientEmailForInvoice(invoice) {
-  return invoice.billing_email || invoice.client_email || null;
+  return (
+    normalizeEmailField(invoice.billing_email) ||
+    normalizeEmailField(invoice.client_email) ||
+    ''
+  );
 }
 
 function normalizeEmailField(value) {
@@ -362,28 +439,103 @@ function normalizeEmailField(value) {
   return trimmed || null;
 }
 
+function isValidEmail(value) {
+  return Boolean(value) && EMAIL_REGEX.test(value);
+}
+
+function formatAmountForEmail(amount) {
+  const value = Number(amount || 0);
+  return `${value.toFixed(2)} CAD`;
+}
+
+function buildDefaultInvoiceEmailSubject(invoice, companyName) {
+  return `Facture ${invoice.invoice_number} - ${companyName || 'Entreprise'}`;
+}
+
 function buildDefaultInvoiceEmailBody({ invoice, settings }) {
   const clientName = getClientDisplayNameForEmail(invoice);
   const companyName = settings?.company_name || 'Votre fournisseur';
-  const totalAmount = Number(invoice.total_amount || 0).toFixed(2);
-  const balanceDue = Number(invoice.balance_due || 0).toFixed(2);
+  const totalAmount = formatAmountForEmail(invoice.total_amount);
 
-  return `Hello ${clientName},
+  return `Bonjour ${clientName},
 
-Please find attached invoice ${invoice.invoice_number} from ${companyName}.
+Veuillez trouver ci-joint la facture ${invoice.invoice_number} d’un montant de ${totalAmount}.
 
-Invoice amount: ${totalAmount} CAD
-Balance due: ${balanceDue} CAD
-
-If you have any questions, you can reply directly to this email.
-
-Thank you for your business.
+Merci,
 
 ${companyName}`;
 }
 
-export async function prepareInvoiceEmail(invoiceId, companyId) {
+function sanitizeCompanySettingsForEmail(settings) {
+  if (!settings) {
+    return null;
+  }
+
+  return {
+    id: settings.id,
+    company_id: settings.company_id,
+    company_name: settings.company_name,
+    company_email: settings.company_email,
+    company_phone: settings.company_phone,
+    company_address: settings.company_address,
+    company_logo_url: settings.company_logo_url
+  };
+}
+
+async function ensureInvoicePdfForEmail(invoice, companyId) {
+  if (invoice.status === 'annulee') {
+    throw createHttpError(
+      'Impossible d’envoyer une facture annulée par email.',
+      409
+    );
+  }
+
+  if (!invoice.invoice_number || invoice.status === 'brouillon') {
+    throw createHttpError(
+      'La facture doit être générée avant l’envoi par email.',
+      409
+    );
+  }
+
+  let current = invoice;
+  let absolutePath = resolveInvoicePdfAbsolutePath(current);
+
+  if (!absolutePath) {
+    const generated = await generateInvoicePdf(current.id, companyId);
+    current = await invoiceRepository.findInvoiceById(current.id, companyId);
+    absolutePath = resolveInvoicePdfAbsolutePath(current);
+
+    if (!absolutePath) {
+      // Fallback if generate only returned a path without updating disk resolution
+      absolutePath = resolveStoragePath(generated?.pdf_url);
+    }
+  }
+
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    return {
+      invoice: current,
+      absolutePath: null,
+      hasPdf: false,
+      attachmentName: `facture-${current.invoice_number}.pdf`,
+      relativePath: current?.pdf_url || null
+    };
+  }
+
+  return {
+    invoice: current,
+    absolutePath,
+    hasPdf: true,
+    attachmentName: `facture-${current.invoice_number}.pdf`,
+    relativePath: current.pdf_url || path.relative(path.resolve(process.cwd()), absolutePath)
+  };
+}
+
+export async function prepareInvoiceEmail(invoiceId, companyId, user = null) {
   requireCompanyId(companyId);
+
+  if (user?.role && !['admin', 'company_admin', 'employee'].includes(user.role)) {
+    throw createHttpError('Permission insuffisante pour préparer cet email.', 403);
+  }
 
   const invoice = await invoiceRepository.findInvoiceById(invoiceId, companyId);
 
@@ -391,56 +543,80 @@ export async function prepareInvoiceEmail(invoiceId, companyId) {
     throw createHttpError('Facture introuvable.', 404);
   }
 
-  if (!invoice.invoice_number) {
+  if (invoice.status === 'annulee') {
     throw createHttpError(
-      'La facture doit être générée avant l’envoi par email.',
+      'Impossible de préparer l’email d’une facture annulée.',
       409
     );
-  }
-
-  let pdfUrl = invoice.pdf_url;
-
-  if (!pdfUrl) {
-    const generatedPdf = await generateInvoicePdf(invoice.id, companyId);
-    pdfUrl = generatedPdf.pdf_url;
   }
 
   const settings = await companySettingsRepository.getCompanySettings(companyId);
 
   if (!settings) {
-    throw createHttpError(
-      'Paramètres entreprise introuvables.',
-      404
-    );
+    throw createHttpError('Paramètres entreprise introuvables.', 404);
+  }
+
+  let pdfMeta = {
+    invoice,
+    absolutePath: null,
+    hasPdf: false,
+    attachmentName: invoice.invoice_number
+      ? `facture-${invoice.invoice_number}.pdf`
+      : null,
+    relativePath: invoice.pdf_url || null
+  };
+
+  if (invoice.invoice_number && invoice.status !== 'brouillon') {
+    try {
+      pdfMeta = await ensureInvoicePdfForEmail(invoice, companyId);
+    } catch (error) {
+      if (error.statusCode === 409) {
+        throw error;
+      }
+      pdfMeta.hasPdf = false;
+    }
   }
 
   const senderEmail = settings.company_email || null;
   const senderName = settings.company_name || null;
-  const recipientEmail = getClientEmailForInvoice(invoice);
-
-  const subject = `Invoice ${invoice.invoice_number} - ${senderName || 'Invoice'}`;
-
+  const recipientEmail = getClientEmailForInvoice(pdfMeta.invoice);
+  const subject = buildDefaultInvoiceEmailSubject(pdfMeta.invoice, senderName);
   const body = buildDefaultInvoiceEmailBody({
-    invoice,
+    invoice: pdfMeta.invoice,
     settings
   });
+  const canSend = Boolean(pdfMeta.hasPdf);
+
+  const invoicePayload = {
+    id: pdfMeta.invoice.id,
+    company_id: pdfMeta.invoice.company_id,
+    invoice_number: pdfMeta.invoice.invoice_number,
+    status: pdfMeta.invoice.status,
+    total_amount: pdfMeta.invoice.total_amount,
+    paid_amount: pdfMeta.invoice.paid_amount,
+    balance_due: pdfMeta.invoice.balance_due,
+    download_url: getInvoiceDownloadApiPath(pdfMeta.invoice.id)
+  };
+
+  const clientPayload = {
+    id: pdfMeta.invoice.client_id,
+    name: getClientDisplayNameForEmail(pdfMeta.invoice),
+    client_type: pdfMeta.invoice.client_type,
+    email: pdfMeta.invoice.client_email || null,
+    billing_email: pdfMeta.invoice.billing_email || null
+  };
 
   return {
-    invoice: {
-      id: invoice.id,
-      company_id: invoice.company_id,
-      invoice_number: invoice.invoice_number,
-      status: invoice.status,
-      total_amount: invoice.total_amount,
-      paid_amount: invoice.paid_amount,
-      balance_due: invoice.balance_due,
-      pdf_url: pdfUrl
-    },
-    client: {
-      id: invoice.client_id,
-      name: getClientDisplayNameForEmail(invoice),
-      email: recipientEmail
-    },
+    invoice: invoicePayload,
+    client: clientPayload,
+    company_settings: sanitizeCompanySettingsForEmail(settings),
+    recipient_email: recipientEmail,
+    subject,
+    body,
+    attachment_name: pdfMeta.attachmentName,
+    has_pdf: pdfMeta.hasPdf,
+    can_send: canSend,
+    // Compatibilité modal frontend existante
     email: {
       from: senderEmail,
       from_name: senderName,
@@ -450,48 +626,96 @@ export async function prepareInvoiceEmail(invoiceId, companyId) {
       subject,
       body,
       attachment: {
-        name: `${invoice.invoice_number}.pdf`,
-        url: pdfUrl
+        name: pdfMeta.attachmentName,
+        download_url: getInvoiceDownloadApiPath(pdfMeta.invoice.id)
       }
     }
   };
 }
 
-export async function sendInvoiceEmail(invoiceId, payload = {}, userId, companyId) {
-  requireCompanyId(companyId);
+export async function sendInvoiceEmail(
+  invoiceId,
+  payload = {},
+  user = null,
+  companyId = null,
+  auditContext = {}
+) {
+  const effectiveCompanyId = companyId || user?.company_id;
+  requireCompanyId(effectiveCompanyId);
 
-  const prepared = await prepareInvoiceEmail(invoiceId, companyId);
+  if (user?.role && !['admin', 'company_admin', 'employee'].includes(user.role)) {
+    throw createHttpError('Permission insuffisante pour envoyer cet email.', 403);
+  }
+
+  const prepared = await prepareInvoiceEmail(invoiceId, effectiveCompanyId, user);
+
+  if (!prepared.can_send || !prepared.has_pdf) {
+    throw createHttpError(
+      "Le PDF de cette facture n'est pas disponible.",
+      409
+    );
+  }
+
+  const invoice = await invoiceRepository.findInvoiceById(
+    invoiceId,
+    effectiveCompanyId
+  );
+
+  if (!invoice) {
+    throw createHttpError('Facture introuvable.', 404);
+  }
+
+  if (invoice.status === 'annulee') {
+    throw createHttpError(
+      'Impossible d’envoyer une facture annulée par email.',
+      409
+    );
+  }
+
+  const settings = await companySettingsRepository.getCompanySettings(
+    effectiveCompanyId
+  );
 
   const fromEmail =
-    normalizeEmailField(payload.from) || prepared.email.from;
+    normalizeEmailField(payload.from) ||
+    settings?.company_email ||
+    null;
 
   const fromName =
-    normalizeEmailField(payload.from_name) || prepared.email.from_name;
+    normalizeEmailField(payload.from_name) ||
+    settings?.company_name ||
+    null;
 
   const recipientEmail =
-    normalizeEmailField(payload.to) || prepared.email.to;
+    normalizeEmailField(payload.to) ||
+    normalizeEmailField(prepared.recipient_email);
 
   const ccEmail = normalizeEmailField(payload.cc);
   const bccEmail = normalizeEmailField(payload.bcc);
 
   const subject =
-    normalizeEmailField(payload.subject) || prepared.email.subject;
+    normalizeEmailField(payload.subject) || prepared.subject;
 
   const body =
-    normalizeEmailField(payload.body) || prepared.email.body;
-
-  if (!fromEmail) {
-    throw createHttpError(
-      'Email expéditeur manquant. Configurez l’email de l’entreprise dans les paramètres.',
-      422
-    );
-  }
+    normalizeEmailField(payload.body) || prepared.body;
 
   if (!recipientEmail) {
     throw createHttpError(
       'Email destinataire manquant. Le client doit avoir un email ou un email de facturation.',
       422
     );
+  }
+
+  if (!isValidEmail(recipientEmail)) {
+    throw createHttpError('Adresse email destinataire invalide.', 422);
+  }
+
+  if (ccEmail && !isValidEmail(ccEmail)) {
+    throw createHttpError('Adresse email CC invalide.', 422);
+  }
+
+  if (bccEmail && !isValidEmail(bccEmail)) {
+    throw createHttpError('Adresse email BCC invalide.', 422);
   }
 
   if (!subject) {
@@ -502,22 +726,28 @@ export async function sendInvoiceEmail(invoiceId, payload = {}, userId, companyI
     throw createHttpError('Le contenu de l’email est obligatoire.', 422);
   }
 
-  const attachmentUrl = prepared.email.attachment.url;
-  const attachmentName = prepared.email.attachment.name;
-  const attachmentPath = buildBackendStoragePath(attachmentUrl);
+  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
 
-  if (!attachmentPath || !fs.existsSync(attachmentPath)) {
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
     throw createHttpError(
-      'Fichier PDF introuvable. Veuillez régénérer la facture.',
-      404
+      "Le PDF de cette facture n'est pas disponible.",
+      409
     );
   }
 
+  const attachmentName =
+    prepared.attachment_name || `facture-${invoice.invoice_number}.pdf`;
+  const attachmentRelativePath =
+    invoice.pdf_url ||
+    path.relative(path.resolve(process.cwd()), absolutePath);
+
+  const userId = user?.id || null;
+
   try {
-    const result = await sendEmailWithAttachment({
+    await sendEmailWithAttachment({
       fromName,
       fromEmail,
-      replyTo: fromEmail,
+      replyTo: fromEmail || undefined,
       to: recipientEmail,
       cc: ccEmail,
       bcc: bccEmail,
@@ -527,13 +757,13 @@ export async function sendInvoiceEmail(invoiceId, payload = {}, userId, companyI
       attachments: [
         {
           filename: attachmentName,
-          path: attachmentPath
+          path: absolutePath
         }
       ]
     });
 
     const log = await invoiceRepository.createInvoiceEmailLog({
-      company_id: companyId,
+      company_id: effectiveCompanyId,
       invoice_id: invoiceId,
       sender_email: fromEmail,
       sender_name: fromName,
@@ -542,32 +772,39 @@ export async function sendInvoiceEmail(invoiceId, payload = {}, userId, companyI
       bcc_email: bccEmail,
       subject,
       body,
-      attachment_url: attachmentUrl,
+      attachment_url: null,
+      attachment_path: attachmentRelativePath,
       attachment_name: attachmentName,
       status: 'sent',
       error_message: null,
       sent_by: userId
     });
 
-    return {
-      message_id: result.messageId,
-      email: {
-        from: fromEmail,
-        from_name: fromName,
-        to: recipientEmail,
+    await createAuditLog({
+      companyId: effectiveCompanyId,
+      userId,
+      actorRole: user?.role || null,
+      action: 'invoice_email_sent',
+      entityType: 'invoice',
+      entityId: invoice.id,
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+      metadata: {
+        recipient: recipientEmail,
         cc: ccEmail,
         bcc: bccEmail,
         subject,
-        attachment: {
-          name: attachmentName,
-          url: attachmentUrl
-        }
-      },
-      log
-    };
+        status: 'sent',
+        invoice_number: invoice.invoice_number
+      }
+    });
+
+    return { log };
   } catch (error) {
+    const detail = error.smtpDetail || error.message;
+
     const log = await invoiceRepository.createInvoiceEmailLog({
-      company_id: companyId,
+      company_id: effectiveCompanyId,
       invoice_id: invoiceId,
       sender_email: fromEmail,
       sender_name: fromName,
@@ -576,23 +813,49 @@ export async function sendInvoiceEmail(invoiceId, payload = {}, userId, companyI
       bcc_email: bccEmail,
       subject,
       body,
-      attachment_url: attachmentUrl,
+      attachment_url: null,
+      attachment_path: attachmentRelativePath,
       attachment_name: attachmentName,
       status: 'failed',
-      error_message: error.message,
+      error_message: detail,
       sent_by: userId
     });
 
+    await createAuditLog({
+      companyId: effectiveCompanyId,
+      userId,
+      actorRole: user?.role || null,
+      action: 'invoice_email_failed',
+      entityType: 'invoice',
+      entityId: invoice.id,
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+      metadata: {
+        recipient: recipientEmail,
+        cc: ccEmail,
+        bcc: bccEmail,
+        subject,
+        status: 'failed',
+        error_message: detail,
+        invoice_number: invoice.invoice_number
+      }
+    });
+
     throw createHttpError(
-      `Échec de l’envoi email : ${error.message}`,
-      500,
+      error.message ||
+        "L'email n'a pas pu être envoyé. Vérifiez la configuration SMTP.",
+      error.statusCode || 502,
       [log]
     );
   }
 }
 
-export async function listInvoiceEmailLogs(invoiceId, companyId) {
+export async function listInvoiceEmailLogs(invoiceId, companyId, user = null) {
   requireCompanyId(companyId);
+
+  if (user?.role && !['admin', 'company_admin', 'employee'].includes(user.role)) {
+    throw createHttpError('Permission insuffisante pour consulter les logs email.', 403);
+  }
 
   const invoice = await invoiceRepository.findInvoiceById(invoiceId, companyId);
 

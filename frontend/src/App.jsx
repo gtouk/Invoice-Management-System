@@ -6,6 +6,7 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import SuperAdminLayout from './layouts/SuperAdminLayout';
 import SuperAdminDashboard from './pages/SuperAdminDashboard/SuperAdminDashboard';
 import SuperAdminCompanies from './pages/SuperAdminCompanies/SuperAdminCompanies';
+import SuperAdminCompanyDetails from './pages/SuperAdminCompanyDetails/SuperAdminCompanyDetails';
 
 import Login from './pages/Auth/Login';
 import RegisterCompany from './pages/Auth/RegisterCompany';
@@ -21,6 +22,8 @@ import Reports from './pages/Reports/Reports';
 import Users from './pages/Users/Users';
 import CompanySettings from './pages/CompanySettings/CompanySettings';
 import InvoiceReminderSettings from './pages/InvoiceReminders/InvoiceReminderSettings';
+import AuditLogs from './pages/AuditLogs/AuditLogs';
+import SuperAdminAuditLogs from './pages/SuperAdminAuditLogs/SuperAdminAuditLogs';
 
 import ClientDashboard from './pages/ClientDashboard/ClientDashboard';
 import ClientProfile from './pages/ClientProfile/ClientProfile';
@@ -58,6 +61,7 @@ export default function App() {
           <Route path="users" element={<Users />} />
           <Route path="company-settings" element={<CompanySettings />} />
           <Route path="invoice-reminders" element={<InvoiceReminderSettings />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
         </Route>
 
         <Route
@@ -75,18 +79,20 @@ export default function App() {
           <Route path="payments" element={<ClientPayments />} />
         </Route>
 
-<Route
-  path="/super-admin"
-  element={
-    <ProtectedRoute allowedRoles={['super_admin']}>
-      <SuperAdminLayout />
-    </ProtectedRoute>
-  }
->
-  <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
-  <Route path="dashboard" element={<SuperAdminDashboard />} />
-  <Route path="companies" element={<SuperAdminCompanies />} />
-</Route>
+        <Route
+          path="/super-admin"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin']}>
+              <SuperAdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
+          <Route path="dashboard" element={<SuperAdminDashboard />} />
+          <Route path="companies" element={<SuperAdminCompanies />} />
+          <Route path="companies/:id" element={<SuperAdminCompanyDetails />} />
+          <Route path="audit-logs" element={<SuperAdminAuditLogs />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

@@ -95,16 +95,32 @@ export async function getInvoicePdf(req, res, next) {
   }
 }
 
+export async function downloadInvoicePdf(req, res, next) {
+  try {
+    const result = await invoiceService.downloadInvoicePdf(req.params.id, req.user, {
+      ipAddress:
+        req.headers['x-forwarded-for']?.toString()?.split(',')[0]?.trim() ||
+        req.ip,
+      userAgent: req.headers['user-agent'] || null
+    });
+
+    return res.download(result.absolutePath, result.fileName);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function prepareInvoiceEmail(req, res, next) {
   try {
     const result = await invoiceService.prepareInvoiceEmail(
       req.params.id,
-      req.user?.company_id
+      req.user?.company_id,
+      req.user
     );
 
     return successResponse(
       res,
-      'Email de facture préparé',
+      'Email de facture préparé avec succès.',
       result
     );
   } catch (error) {
@@ -117,13 +133,19 @@ export async function sendInvoiceEmail(req, res, next) {
     const result = await invoiceService.sendInvoiceEmail(
       req.params.id,
       req.body,
-      req.user?.id,
-      req.user?.company_id
+      req.user,
+      req.user?.company_id,
+      {
+        ipAddress:
+          req.headers['x-forwarded-for']?.toString()?.split(',')[0]?.trim() ||
+          req.ip,
+        userAgent: req.headers['user-agent'] || null
+      }
     );
 
     return successResponse(
       res,
-      'Facture envoyée par email avec succès',
+      'Facture envoyée par email avec succès.',
       result
     );
   } catch (error) {
@@ -135,12 +157,13 @@ export async function listInvoiceEmailLogs(req, res, next) {
   try {
     const logs = await invoiceService.listInvoiceEmailLogs(
       req.params.id,
-      req.user?.company_id
+      req.user?.company_id,
+      req.user
     );
 
     return successResponse(
       res,
-      'Historique email de la facture',
+      'Logs email récupérés avec succès.',
       logs
     );
   } catch (error) {

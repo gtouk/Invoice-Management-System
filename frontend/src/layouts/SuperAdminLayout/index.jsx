@@ -1,8 +1,17 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import './SuperAdminLayout.css';
 
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+}
+
 export default function SuperAdminLayout() {
   const navigate = useNavigate();
+  const user = getStoredUser();
 
   function handleLogout() {
     localStorage.clear();
@@ -21,9 +30,15 @@ export default function SuperAdminLayout() {
           </div>
         </div>
 
+        <div className="super-admin-user">
+          <strong>{user.full_name || 'Super Admin'}</strong>
+          <small>{user.email || user.username || 'super_admin'}</small>
+        </div>
+
         <nav className="super-admin-nav">
           <NavLink to="/super-admin/dashboard">Dashboard</NavLink>
           <NavLink to="/super-admin/companies">Entreprises</NavLink>
+          <NavLink to="/super-admin/audit-logs">Audit logs</NavLink>
         </nav>
 
         <button
