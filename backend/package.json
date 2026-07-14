@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "seed:super-admin": "node src/scripts/createSuperAdmin.js"
+    "seed:super-admin": "node src/scripts/createSuperAdmin.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "bcryptjs": "latest",
@@ -27,6 +29,8 @@
     "uuid": "latest"
   },
   "devDependencies": {
-    "nodemon": "latest"
+    "nodemon": "latest",
+    "supertest": "^7.1.4",
+    "vitest": "^3.2.4"
   }
 }

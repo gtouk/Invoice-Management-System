@@ -122,6 +122,26 @@ Invoice-Management-System/
 └── .env.example
 ```
 
+## Tests
+
+Détails : [`docs/TESTING.md`](docs/TESTING.md) · Checklist : [`docs/QA_CHECKLIST.md`](docs/QA_CHECKLIST.md)
+
+### Backend (intégration API — nécessite Docker + Postgres + comptes démo)
+
+```bash
+docker compose up -d
+docker compose exec backend npm install
+docker compose exec backend npm test
+```
+
+### Frontend (unitaires formatters)
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
 ## Commandes utiles
 
 ```bash
@@ -136,4 +156,6 @@ docker compose down -v   # attention : efface les données Postgres
 
 - [`docs/DEMO_ACCOUNTS.md`](docs/DEMO_ACCOUNTS.md) — comptes et parcours démo
 - [`docs/SMTP_SETUP.md`](docs/SMTP_SETUP.md) — configuration email
+- [`docs/TESTING.md`](docs/TESTING.md) — lancer les tests automatisés
+- [`docs/QA_CHECKLIST.md`](docs/QA_CHECKLIST.md) — checklist qualité manuelle
 - [`docs/START_HERE.md`](docs/START_HERE.md) — démarrage projet

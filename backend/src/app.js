@@ -60,5 +60,8 @@ app.use('/api/super-admin', superAdminRoutes);
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
-startInvoiceReminderJob();
+if (process.env.NODE_ENV !== 'test') {
+  startInvoiceReminderJob();
+}
+
 export default app;
