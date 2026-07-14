@@ -31,3 +31,7 @@ storage/ocr-temp/**
 # IDE
 .idea/
 .vscode/
+
+# Local DB dumps / backups (keep out of Git)
+backups/
+*.sql.bak
