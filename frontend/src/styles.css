@@ -1,0 +1,56 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #1f2937; }
+a { color: inherit; text-decoration: none; }
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.login-card { width: 100%; max-width: 420px; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.08); display: flex; flex-direction: column; gap: 12px; }
+.login-card h1 { margin: 0; font-size: 24px; }
+.login-card p { margin-top: 0; color: #6b7280; }
+input { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+button { padding: 12px 16px; border: 0; border-radius: 8px; background: #2563eb; color: white; cursor: pointer; font-weight: 600; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+.error-message { padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; }
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar { width: 260px; background: #111827; color: white; padding: 24px; }
+.sidebar h2 { margin-top: 0; }
+.sidebar nav { display: flex; flex-direction: column; gap: 10px; }
+.sidebar a { padding: 10px 12px; border-radius: 8px; color: #e5e7eb; }
+.sidebar a:hover { background: #1f2937; }
+.main-content { flex: 1; display: flex; flex-direction: column; }
+.topbar { height: 64px; background: white; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+.content-area { padding: 24px; }
+.cards-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.05); display: flex; flex-direction: column; gap: 10px; }
+.card span { color: #6b7280; }
+.card strong { font-size: 28px; }
+
+.page-stack { display: flex; flex-direction: column; gap: 20px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.page-header h1 { margin-bottom: 4px; }
+.page-header p { margin-top: 0; color: #6b7280; }
+.panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.05); }
+.panel h2 { margin-top: 0; }
+.section-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.form-grid label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; color: #374151; }
+.form-grid input, .form-grid select, .form-grid textarea, .filters-row input, .filters-row select { width: 100%; padding: 11px; border: 1px solid #d1d5db; border-radius: 8px; font: inherit; }
+.form-wide { grid-column: 1 / -1; }
+.form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; }
+.filters-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 16px; }
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+th { color: #4b5563; background: #f9fafb; font-size: 14px; }
+.actions-cell { display: flex; flex-wrap: wrap; gap: 6px; }
+.button-small { padding: 7px 10px; font-size: 12px; border-radius: 6px; }
+.button-secondary { background: #e5e7eb; color: #111827; }
+.danger { background: #dc2626; }
+.success-message { padding: 12px; background: #dcfce7; color: #166534; border-radius: 8px; }
+.status-badge { display: inline-flex; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #e5e7eb; color: #374151; }
+.status-badge.actif { background: #dcfce7; color: #166534; }
+.status-badge.archive { background: #e5e7eb; color: #374151; }
+.summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+
+@media (max-width: 900px) {
+  .cards-grid, .summary-grid, .form-grid, .filters-row { grid-template-columns: 1fr; }
+  .sidebar { width: 220px; }
+}

@@ -1,0 +1,275 @@
+.client-history-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.client-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.client-history-header h1 {
+  margin: 14px 0 4px;
+  font-size: 28px;
+  color: #111827;
+}
+
+.client-history-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.client-status-box {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px 16px;
+  min-width: 130px;
+}
+
+.client-status-box span,
+.client-profile-grid span,
+.summary-card span {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 5px;
+}
+
+.client-status-box strong,
+.client-profile-grid strong,
+.summary-card strong {
+  color: #111827;
+}
+
+.client-history-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.client-profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.client-profile-card h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  color: #111827;
+}
+
+.client-profile-card p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.client-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.client-profile-grid div {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.client-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.summary-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.summary-card strong {
+  display: block;
+  font-size: 22px;
+}
+
+.danger-summary strong {
+  color: #b42318;
+}
+
+.client-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+}
+
+.client-tabs button {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.client-tabs .active-tab {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.history-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.history-section-header h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: #111827;
+}
+
+.history-section-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.history-section-header select {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.client-history-table-wrapper {
+  overflow-x: auto;
+}
+
+.client-history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.client-history-table th,
+.client-history-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.client-history-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 700;
+}
+
+.client-history-table a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.history-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-brouillon {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.status-non_payee {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.status-partiellement_payee {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.status-payee {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.status-annulee {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.client-history-empty {
+  padding: 18px;
+  text-align: center;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.client-history-alert {
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.client-history-alert-error {
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.secondary-button {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+@media (max-width: 1100px) {
+  .client-profile-grid,
+  .client-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .client-history-header,
+  .history-section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .client-profile-grid,
+  .client-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .client-tabs {
+    flex-direction: column;
+  }
+}

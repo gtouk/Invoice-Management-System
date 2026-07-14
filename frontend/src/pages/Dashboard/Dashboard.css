@@ -1,0 +1,348 @@
+.dashboard-page {
+  gap: 20px;
+}
+
+.dashboard-hero {
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 34%),
+    linear-gradient(135deg, #111827 0%, #1e3a8a 100%);
+  color: #ffffff;
+  padding: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
+}
+
+.dashboard-hero .eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #bfdbfe;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dashboard-hero h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.dashboard-hero p {
+  margin: 10px 0 0;
+  color: #dbeafe;
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+.dashboard-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashboard-hero button,
+.hero-secondary-link {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hero-secondary-link {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.dashboard-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quick-action-card {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.quick-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+}
+
+.quick-action-card span {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.quick-action-card strong {
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-stat-card {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+}
+
+.dashboard-stat-card span {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dashboard-stat-card strong {
+  color: #111827;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.dashboard-stat-card small {
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+.dashboard-stat-card.blue {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.dashboard-stat-card.green {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+}
+
+.dashboard-stat-card.red {
+  background: #fef3f2;
+  border-color: #fecaca;
+}
+
+.dashboard-stat-card.orange {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.dashboard-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.status-list,
+.unpaid-client-list,
+.recent-payment-list {
+  display: grid;
+  gap: 10px;
+}
+
+.status-row,
+.unpaid-client-card,
+.recent-payment-card {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 13px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.status-row div,
+.unpaid-client-card div,
+.recent-payment-card div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-row strong,
+.unpaid-client-card strong,
+.recent-payment-card strong {
+  color: #111827;
+}
+
+.status-row span,
+.unpaid-client-card span,
+.recent-payment-card span,
+.recent-payment-card small {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.dashboard-table-wrapper {
+  overflow-x: auto;
+}
+
+.dashboard-table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-table-wrapper th,
+.dashboard-table-wrapper td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 11px 9px;
+  text-align: left;
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.dashboard-table-wrapper th {
+  color: #374151;
+  background: #f9fafb;
+  font-weight: 800;
+}
+
+.dashboard-table-wrapper td strong {
+  display: block;
+  color: #111827;
+}
+
+.dashboard-table-wrapper td small {
+  display: block;
+  margin-top: 3px;
+  color: #6b7280;
+}
+
+.invoice-status,
+.payment-method-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #f3f4f6;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.invoice-status.non_payee {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.invoice-status.partiellement_payee {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.invoice-status.payee {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.invoice-status.brouillon {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.payment-method-pill {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.small-link-button {
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.empty-state {
+  margin: 0;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.error-message {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+@media (max-width: 1280px) {
+  .dashboard-actions-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-hero {
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .dashboard-hero-actions {
+    width: 100%;
+  }
+
+  .dashboard-hero button,
+  .hero-secondary-link {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dashboard-actions-grid,
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-row,
+  .unpaid-client-card,
+  .recent-payment-card {
+    flex-direction: column;
+  }
+}

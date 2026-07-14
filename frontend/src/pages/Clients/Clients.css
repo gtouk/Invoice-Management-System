@@ -1,0 +1,777 @@
+/* ─────────────────────────────────────────────
+   Design System Tokens (partagés avec Invoices)
+───────────────────────────────────────────── */
+:root {
+  --cl-radius-sm: 6px;
+  --cl-radius-md: 10px;
+  --cl-radius-lg: 14px;
+  --cl-radius-xl: 18px;
+  --cl-radius-2xl: 22px;
+
+  --cl-bg: #f8f9fb;
+  --cl-surface: #ffffff;
+  --cl-border: rgba(0, 0, 0, 0.08);
+  --cl-border-strong: rgba(0, 0, 0, 0.14);
+
+  --cl-text-primary: #0f172a;
+  --cl-text-secondary: #64748b;
+  --cl-text-tertiary: #94a3b8;
+
+  --cl-accent: #2d5be3;
+  --cl-accent-hover: #2349c8;
+
+  --cl-success-bg: #eaf3de;
+  --cl-success-text: #3b6d11;
+  --cl-success-border: #c0dd97;
+  --cl-success-dot: #639922;
+
+  --cl-danger-bg: #fcebeb;
+  --cl-danger-text: #a32d2d;
+  --cl-danger-border: #f7c1c1;
+
+  --cl-member-bg: #f0fdf4;
+  --cl-member-border: #bbf7d0;
+  --cl-member-text: #166534;
+
+  --cl-nonmember-bg: #eff6ff;
+  --cl-nonmember-border: #bfdbfe;
+  --cl-nonmember-text: #1e40af;
+
+  --cl-font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* ─────────────────────────────────────────────
+   Page Shell
+───────────────────────────────────────────── */
+.cl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--cl-font);
+  color: var(--cl-text-primary);
+}
+
+/* ─────────────────────────────────────────────
+   Header
+───────────────────────────────────────────── */
+.cl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.cl-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cl-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cl-text-secondary);
+}
+
+.cl-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cl-subtitle {
+  font-size: 14px;
+  color: var(--cl-text-secondary);
+  margin: 0;
+  max-width: 680px;
+}
+
+/* ─────────────────────────────────────────────
+   Buttons (identiques à Invoices)
+───────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--cl-text-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--cl-radius-md);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--cl-text-secondary);
+  border: 1px solid var(--cl-border-strong);
+  border-radius: var(--cl-radius-md);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+
+.btn-ghost:hover { background: #f1f5f9; color: var(--cl-text-primary); }
+.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-filter-submit {
+  display: inline-flex;
+  align-items: center;
+  background: var(--cl-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--cl-radius-md);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.btn-filter-submit:hover { background: var(--cl-accent-hover); }
+.btn-filter-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ─────────────────────────────────────────────
+   Toast Messages
+───────────────────────────────────────────── */
+.toast {
+  padding: 12px 16px;
+  border-radius: var(--cl-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toast-success {
+  background: var(--cl-success-bg);
+  color: var(--cl-success-text);
+  border: 1px solid var(--cl-success-border);
+}
+
+.toast-error {
+  background: var(--cl-danger-bg);
+  color: var(--cl-danger-text);
+  border: 1px solid var(--cl-danger-border);
+}
+
+/* ─────────────────────────────────────────────
+   Metrics Row
+───────────────────────────────────────────── */
+.cl-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.cl-metric-card {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-border);
+  border-radius: var(--cl-radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cl-metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--cl-text-secondary);
+}
+
+.cl-metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.cl-metric-sub {
+  font-size: 12px;
+  color: var(--cl-text-tertiary);
+}
+
+.cl-metric-success .cl-metric-value { color: var(--cl-success-text); }
+.cl-metric-danger .cl-metric-value { color: var(--cl-danger-text); }
+
+/* ─────────────────────────────────────────────
+   Filter Bar
+───────────────────────────────────────────── */
+.cl-filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cl-filter-input {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-border-strong);
+  border-radius: var(--cl-radius-md);
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--cl-text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.cl-filter-input:focus {
+  border-color: var(--cl-accent);
+  box-shadow: 0 0 0 3px rgba(45, 91, 227, 0.1);
+}
+
+.cl-filter-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.cl-filter-select {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-border-strong);
+  border-radius: var(--cl-radius-md);
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--cl-text-primary);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.cl-filter-select:focus {
+  border-color: var(--cl-accent);
+  box-shadow: 0 0 0 3px rgba(45, 91, 227, 0.1);
+}
+
+/* ─────────────────────────────────────────────
+   Panel
+───────────────────────────────────────────── */
+.cl-panel {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-border);
+  border-radius: var(--cl-radius-xl);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cl-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.cl-panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+  margin: 0;
+}
+
+.cl-panel-subtitle {
+  font-size: 13px;
+  color: var(--cl-text-secondary);
+  margin: 3px 0 0;
+}
+
+/* ─────────────────────────────────────────────
+   Form
+───────────────────────────────────────────── */
+.cl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cl-form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cl-form-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cl-text-secondary);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--cl-border);
+  margin-top: 4px;
+}
+
+.cl-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+}
+
+.cl-field-input {
+  width: 100%;
+  background: #f8f9fb;
+  border: 1px solid var(--cl-border-strong);
+  border-radius: var(--cl-radius-md);
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--cl-text-primary);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.cl-field-input:focus {
+  border-color: var(--cl-accent);
+  background: var(--cl-surface);
+  box-shadow: 0 0 0 3px rgba(45, 91, 227, 0.1);
+}
+
+textarea.cl-field-input { resize: vertical; }
+
+.cl-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* ─────────────────────────────────────────────
+   Client Groups
+───────────────────────────────────────────── */
+.cl-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cl-group {
+  border-radius: var(--cl-radius-xl);
+  border: 1px solid var(--cl-border);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cl-group-members {
+  background: linear-gradient(160deg, #f0fdf4 0%, #ffffff 60%);
+  border-color: var(--cl-member-border);
+}
+
+.cl-group-nonmembers {
+  background: linear-gradient(160deg, #eff6ff 0%, #ffffff 60%);
+  border-color: var(--cl-nonmember-border);
+}
+
+.cl-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.cl-group-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cl-text-secondary);
+  margin-bottom: 4px;
+}
+
+.cl-group-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+  margin: 0;
+}
+
+.cl-group-desc {
+  font-size: 13px;
+  color: var(--cl-text-secondary);
+  margin: 4px 0 0;
+}
+
+.cl-group-count {
+  min-width: 44px;
+  height: 44px;
+  border-radius: var(--cl-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cl-group-count-member {
+  background: var(--cl-member-bg);
+  color: var(--cl-member-text);
+  border: 1px solid var(--cl-member-border);
+}
+
+.cl-group-count-nonmember {
+  background: var(--cl-nonmember-bg);
+  color: var(--cl-nonmember-text);
+  border: 1px solid var(--cl-nonmember-border);
+}
+
+/* ─────────────────────────────────────────────
+   Client Grid
+───────────────────────────────────────────── */
+.cl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ─────────────────────────────────────────────
+   Client Card
+───────────────────────────────────────────── */
+.cl-card {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-border);
+  border-radius: var(--cl-radius-xl);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.cl-card:hover {
+  border-color: var(--cl-border-strong);
+  transform: translateY(-1px);
+}
+
+.cl-card-member { border-color: var(--cl-member-border); }
+.cl-card-nonmember { border-color: var(--cl-nonmember-border); }
+
+.cl-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cl-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--cl-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cl-avatar-member {
+  background: var(--cl-member-bg);
+  color: var(--cl-member-text);
+  border: 1px solid var(--cl-member-border);
+}
+
+.cl-avatar-nonmember {
+  background: var(--cl-nonmember-bg);
+  color: var(--cl-nonmember-text);
+  border: 1px solid var(--cl-nonmember-border);
+}
+
+.cl-card-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.cl-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-card-email {
+  font-size: 12px;
+  color: var(--cl-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-archived-badge {
+  display: inline-flex;
+  border-radius: 99px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+  flex-shrink: 0;
+}
+
+/* ─── Badges ─── */
+.cl-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.cl-badge {
+  display: inline-flex;
+  border-radius: 99px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cl-badge-type-particulier {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.cl-badge-type-entreprise {
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.cl-badge-membership-membre {
+  background: var(--cl-member-bg);
+  color: var(--cl-member-text);
+  border: 1px solid var(--cl-member-border);
+}
+
+.cl-badge-membership-non_membre {
+  background: #f1f5f9;
+  color: var(--cl-text-secondary);
+  border: 1px solid var(--cl-border-strong);
+}
+
+/* ─── Details ─── */
+.cl-card-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cl-detail-item {
+  background: #f8f9fb;
+  border: 1px solid var(--cl-border);
+  border-radius: var(--cl-radius-md);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cl-detail-item span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cl-text-tertiary);
+}
+
+.cl-detail-item strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cl-text-primary);
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-balance-due { color: var(--cl-danger-text) !important; }
+
+/* ─── Card Actions ─── */
+.cl-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.cl-act-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cl-border-strong);
+  background: transparent;
+  border-radius: var(--cl-radius-sm);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cl-text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cl-act-btn:hover {
+  background: #f1f5f9;
+  color: var(--cl-text-primary);
+}
+
+.cl-act-success {
+  background: var(--cl-success-bg);
+  color: var(--cl-success-text);
+  border-color: var(--cl-success-border);
+}
+
+.cl-act-success:hover {
+  background: #c0dd97;
+  color: var(--cl-success-text);
+}
+
+.cl-act-danger {
+  background: var(--cl-danger-bg);
+  color: var(--cl-danger-text);
+  border-color: var(--cl-danger-border);
+}
+
+.cl-act-danger:hover { background: #f7c1c1; }
+
+/* ─────────────────────────────────────────────
+   Empty States
+───────────────────────────────────────────── */
+.cl-empty {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--cl-text-secondary);
+  font-size: 14px;
+  border: 1px dashed var(--cl-border-strong);
+  border-radius: var(--cl-radius-lg);
+  background: #f8f9fb;
+}
+
+.cl-empty-mini {
+  padding: 16px;
+  border-radius: var(--cl-radius-md);
+}
+
+/* ─────────────────────────────────────────────
+   Pagination
+───────────────────────────────────────────── */
+.cl-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.cl-pagination-info {
+  font-size: 13px;
+  color: var(--cl-text-secondary);
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────
+   Responsive — Tablet (≤ 1200px)
+───────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .cl-metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cl-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Responsive — Mobile (≤ 760px)
+───────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .cl-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cl-metrics-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cl-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cl-filter-search {
+    min-width: 0;
+  }
+
+  .cl-form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .cl-form-actions {
+    flex-direction: column;
+  }
+
+  .cl-form-actions button {
+    width: 100%;
+  }
+
+  .cl-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cl-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cl-pagination button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cl-card-actions {
+    flex-direction: column;
+  }
+
+  .cl-act-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .cl-metrics-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,685 @@
+.bank-statements-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 40px;
+}
+
+.bank-statements-header {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.24), transparent 34%),
+    linear-gradient(135deg, #0f172a 0%, #1d4ed8 52%, #0891b2 100%);
+  color: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.bank-statements-header::after {
+  content: "";
+  position: absolute;
+  right: -70px;
+  bottom: -90px;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.bank-statements-header h1 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.bank-statements-header p {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 15px;
+}
+
+.bank-statements-header button {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.bank-alert {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  font-size: 14px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.bank-alert strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.bank-alert span {
+  display: block;
+}
+
+.bank-alert-success {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+  color: #047857;
+  border: 1px solid #bbf7d0;
+}
+
+.bank-alert-error {
+  background: linear-gradient(135deg, #fff1f2, #fef2f2);
+  color: #b42318;
+  border: 1px solid #fecdd3;
+}
+
+.bank-alert-with-action {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bank-alert-action {
+  flex-shrink: 0;
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(5, 150, 105, 0.26);
+}
+
+.bank-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.bank-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+}
+
+.bank-card h2,
+.bank-card h3,
+.bank-card h4 {
+  margin: 0 0 16px;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.bank-card h2 {
+  font-size: 20px;
+}
+
+.bank-card h3 {
+  font-size: 17px;
+}
+
+.bank-card h4 {
+  font-size: 15px;
+}
+
+.bank-form,
+.bank-invoice-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label,
+.bank-checkbox {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select,
+.bank-filters input,
+.bank-filters select {
+  width: 100%;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-size: 14px;
+  color: #0f172a;
+  outline: none;
+  background: #ffffff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.form-group input[type="file"] {
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus,
+.bank-filters input:focus,
+.bank-filters select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.bank-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.bank-section-header.compact {
+  align-items: flex-start;
+}
+
+.bank-section-header h2,
+.bank-section-header h3,
+.bank-section-header h4 {
+  margin-bottom: 4px;
+}
+
+.bank-section-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.bank-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 180px 170px auto;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.bank-filter-actions,
+.bank-form-actions,
+.bank-actions,
+.bank-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button {
+  border: none;
+  border-radius: 13px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  background: #2563eb;
+  color: #ffffff;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  background: #eef2f7;
+  color: #334155;
+}
+
+.secondary-button:hover:not(:disabled) {
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.1);
+}
+
+.success-button {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.success-button:hover:not(:disabled) {
+  box-shadow: 0 12px 24px rgba(22, 163, 74, 0.24);
+}
+
+.danger-button {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.danger-button:hover:not(:disabled) {
+  box-shadow: 0 12px 24px rgba(220, 38, 38, 0.22);
+}
+
+.bank-table-wrapper {
+  overflow-x: auto;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+}
+
+.bank-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+}
+
+.bank-table th,
+.bank-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.bank-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.bank-table tbody tr {
+  transition: background 0.16s ease;
+}
+
+.bank-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.bank-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.bank-table td strong {
+  display: block;
+  color: #0f172a;
+}
+
+.bank-table small {
+  display: block;
+  color: #64748b;
+  margin-top: 5px;
+  max-width: 360px;
+  line-height: 1.35;
+}
+
+.bank-transaction-table th:nth-child(3),
+.bank-transaction-table td:nth-child(3) {
+  min-width: 260px;
+}
+
+.bank-status,
+.transaction-type-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-importe,
+.transaction-extrait {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-traite,
+.transaction-corrige {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.status-erreur,
+.transaction-rejete {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.transaction-valide {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.transaction-utilise {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.transaction-type-pill.depot {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.transaction-type-pill.retrait {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.transaction-type-pill.frais {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.money-in {
+  color: #059669 !important;
+  font-weight: 900;
+}
+
+.money-out {
+  color: #dc2626 !important;
+  font-weight: 900;
+}
+
+.invoice-link-button {
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.invoice-link-button:hover:not(:disabled) {
+  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.16);
+}
+
+.bank-empty {
+  padding: 22px;
+  text-align: center;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 18px;
+  border: 1px dashed #cbd5e1;
+}
+
+.bank-detail-card {
+  margin-top: 2px;
+}
+
+.bank-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.bank-detail-header h2 {
+  margin-bottom: 5px;
+}
+
+.bank-detail-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.bank-detail-actions {
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.bank-detail-status {
+  background: linear-gradient(135deg, #f8fafc, #eef2ff);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 13px;
+  min-width: 140px;
+}
+
+.bank-detail-status span,
+.bank-detail-grid span,
+.bank-summary-grid span {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.bank-detail-status strong,
+.bank-detail-grid strong,
+.bank-summary-grid strong {
+  color: #0f172a;
+}
+
+.bank-detail-grid,
+.bank-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bank-summary-grid {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.bank-detail-grid > div,
+.bank-summary-grid > div {
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.bank-summary-grid strong {
+  font-size: 19px;
+  letter-spacing: -0.03em;
+}
+
+.bank-notes {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 14px;
+  color: #334155;
+}
+
+.bank-transactions-layout {
+  display: grid;
+  grid-template-columns: 390px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.bank-transaction-form-card,
+.bank-transactions-card,
+.bank-client-action-card,
+.bank-invoice-action-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.bank-transaction-form-card {
+  position: sticky;
+  top: 14px;
+}
+
+.bank-client-action-card,
+.bank-invoice-action-card {
+  grid-column: 1 / -1;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 30%),
+    #f8fafc;
+}
+
+.bank-client-action-card .bank-form {
+  max-width: 760px;
+}
+
+.bank-invoice-form {
+  margin-top: 14px;
+}
+
+.bank-invoice-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.bank-invoice-line {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 110px 140px auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.bank-reconciliation-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.bank-reconciliation-panel > div {
+  padding: 14px;
+  border-radius: 18px;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.bank-reconciliation-panel span {
+  display: block;
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 5px;
+}
+
+.bank-reconciliation-panel strong {
+  font-size: 20px;
+}
+
+.bank-adjustment-box,
+.bank-reconciliation-warning {
+  padding: 15px;
+  border-radius: 20px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.bank-reconciliation-warning ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.bank-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.bank-checkbox input {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 1300px) {
+  .bank-top-grid,
+  .bank-transactions-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .bank-transaction-form-card {
+    position: static;
+  }
+
+  .bank-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .bank-invoice-line {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .bank-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bank-detail-grid,
+  .bank-summary-grid,
+  .bank-reconciliation-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bank-statements-header {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .bank-statements-header,
+  .bank-detail-header,
+  .bank-section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-row,
+  .bank-filters,
+  .bank-detail-grid,
+  .bank-summary-grid,
+  .bank-reconciliation-panel,
+  .bank-invoice-line {
+    grid-template-columns: 1fr;
+  }
+
+  .bank-filter-actions,
+  .bank-form-actions,
+  .bank-actions,
+  .bank-detail-actions {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+}

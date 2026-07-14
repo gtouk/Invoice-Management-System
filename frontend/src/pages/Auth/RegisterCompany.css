@@ -1,0 +1,368 @@
+.register-company-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 35%),
+    linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.register-company-card {
+  width: min(1180px, 100%);
+  min-height: 720px;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  overflow: hidden;
+}
+
+.register-company-left {
+  background: linear-gradient(180deg, #111827 0%, #1e3a8a 100%);
+  color: #ffffff;
+  padding: 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.brand-block {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.brand-block h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.brand-block p {
+  margin: 10px 0 0;
+  color: #dbeafe;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #dbeafe;
+  font-size: 14px;
+}
+
+.progress-track {
+  height: 9px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #60a5fa;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.step-item {
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.step-item:hover,
+.step-item.active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.step-item.done {
+  background: rgba(34, 197, 94, 0.18);
+}
+
+.step-item > span {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.step-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.step-item strong {
+  font-size: 14px;
+}
+
+.step-item small {
+  color: #dbeafe;
+  line-height: 1.35;
+}
+
+.login-hint {
+  margin-top: auto;
+  color: #dbeafe;
+  font-size: 14px;
+}
+
+.login-hint a {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.register-company-form {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-heading {
+  margin-bottom: 24px;
+}
+
+.form-heading span {
+  color: #2563eb;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.form-heading h2 {
+  margin: 8px 0 6px;
+  font-size: 28px;
+  color: #111827;
+}
+
+.form-heading p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.register-error {
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  color: #b42318;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+
+.register-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.register-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #374151;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.register-field strong {
+  color: #dc2626;
+}
+
+.register-field-wide {
+  grid-column: 1 / -1;
+}
+
+.register-field input,
+.register-field select,
+.register-field textarea {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px 13px;
+  font-size: 14px;
+  outline: none;
+  color: #111827;
+}
+
+.register-field input:focus,
+.register-field select:focus,
+.register-field textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.checkbox-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 600;
+  background: #f9fafb;
+}
+
+.toggle-list {
+  display: grid;
+  gap: 10px;
+}
+
+.toggle-list label {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 600;
+}
+
+.confirmation-box {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.confirmation-box > div {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.confirmation-box span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.confirmation-box strong {
+  color: #111827;
+  font-size: 16px;
+}
+
+.confirmation-box p {
+  color: #4b5563;
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.register-actions {
+  margin-top: auto;
+  padding-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.register-actions button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.register-actions button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.register-actions .button-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+@media (max-width: 980px) {
+  .register-company-card {
+    grid-template-columns: 1fr;
+  }
+
+  .register-company-left {
+    padding: 26px;
+  }
+
+  .step-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .register-company-page {
+    padding: 16px;
+  }
+
+  .register-company-form {
+    padding: 24px;
+  }
+
+  .register-grid,
+  .confirmation-box,
+  .checkbox-grid,
+  .step-list {
+    grid-template-columns: 1fr;
+  }
+
+  .register-actions {
+    flex-direction: column-reverse;
+  }
+
+  .register-actions button {
+    width: 100%;
+  }
+}

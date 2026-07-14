@@ -1,0 +1,270 @@
+.commissions-page {
+  gap: 20px;
+}
+
+.commission-hero {
+  border-radius: 22px;
+  padding: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.2), transparent 34%),
+    linear-gradient(135deg, #111827 0%, #1e3a8a 100%);
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.commission-hero span {
+  color: #bfdbfe;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.commission-hero h1 {
+  margin: 8px 0;
+  font-size: 32px;
+}
+
+.commission-hero p {
+  margin: 0;
+  color: #dbeafe;
+  max-width: 680px;
+  line-height: 1.5;
+}
+
+.commission-hero button {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.commission-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.commission-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.commission-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #374151;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.commission-form input,
+.commission-form select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: #111827;
+  outline: none;
+  font-size: 14px;
+}
+
+.commission-form input:focus,
+.commission-form select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.commission-rate-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.commission-rate-actions button {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 15px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.commission-rate-actions button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.commission-rate-actions button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.commission-help {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.commission-help strong {
+  color: #111827;
+}
+
+.commission-help p {
+  margin: 6px 0 0;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.empty-result {
+  border: 1px dashed #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.result-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.main-result-card {
+  border-radius: 20px;
+  padding: 24px;
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.main-result-card span {
+  color: #027a48;
+  font-weight: 800;
+}
+
+.main-result-card strong {
+  color: #064e3b;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.main-result-card small {
+  color: #027a48;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.result-grid div,
+.rate-box div {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.result-grid span,
+.rate-box span {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.result-grid strong,
+.rate-box strong {
+  color: #111827;
+}
+
+.rate-box {
+  display: grid;
+  gap: 10px;
+}
+
+.rate-info-card,
+.manual-rate-warning {
+  margin-top: 16px;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rate-info-card {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.manual-rate-warning {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.success-message {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ecfdf3;
+  color: #027a48;
+  border: 1px solid #abefc6;
+}
+
+.error-message {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+@media (max-width: 1050px) {
+  .commission-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .commission-hero {
+    flex-direction: column;
+  }
+
+  .commission-hero button {
+    width: 100%;
+  }
+
+  .commission-form,
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .commission-rate-actions {
+    flex-direction: column;
+  }
+
+  .commission-rate-actions button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,222 @@
+.company-settings-page {
+  gap: 20px;
+}
+
+.company-settings-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.logo-panel {
+  position: sticky;
+  top: 20px;
+}
+
+.logo-preview-box {
+  width: 100%;
+  min-height: 180px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.logo-preview-box img {
+  max-width: 90%;
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.logo-placeholder {
+  width: 110px;
+  height: 110px;
+  border-radius: 24px;
+  background: #e0ecff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.logo-upload-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.logo-upload-form label,
+.settings-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #374151;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.logo-upload-form input,
+.settings-form input,
+.settings-form textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+}
+
+.logo-upload-form input:focus,
+.settings-form input:focus,
+.settings-form textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.logo-upload-form button,
+.settings-form button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.logo-upload-form button:disabled,
+.settings-form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.helper-text {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 12px;
+}
+
+.settings-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.form-wide {
+  grid-column: 1 / -1;
+}
+
+.settings-section-title {
+  margin-top: 8px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  font-weight: 800;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.success-message {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ecfdf3;
+  color: #027a48;
+  border: 1px solid #abefc6;
+}
+
+.error-message {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+.company-preview-card {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 18px;
+}
+
+.company-preview-card img {
+  width: 90px;
+  max-height: 70px;
+  object-fit: contain;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.company-preview-card h3 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 20px;
+}
+
+.company-preview-card p {
+  margin: 4px 0;
+  color: #4b5563;
+}
+
+.tax-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tax-preview span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+  .company-settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .logo-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-form {
+    grid-template-columns: 1fr;
+  }
+
+  .company-preview-card {
+    flex-direction: column;
+  }
+
+  .form-actions {
+    justify-content: stretch;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}

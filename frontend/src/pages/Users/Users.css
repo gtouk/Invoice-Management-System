@@ -1,0 +1,299 @@
+.users-page {
+  gap: 20px;
+}
+
+.users-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.5fr) minmax(160px, 0.7fr) minmax(160px, 0.7fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.users-filters label,
+.user-form label,
+.password-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.users-filters input,
+.users-filters select,
+.user-form input,
+.user-form select,
+.password-form input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 12px;
+  padding: 11px 12px;
+  outline: none;
+  font-size: 14px;
+}
+
+.users-filters input:focus,
+.users-filters select:focus,
+.user-form input:focus,
+.user-form select:focus,
+.password-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.users-filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.users-filter-actions button,
+.form-actions button,
+.password-form button,
+.users-table-panel button,
+.page-header button {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.users-filter-actions button.secondary,
+.form-actions button.secondary,
+.users-table-panel button.secondary,
+.section-header button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.users-filter-actions button:disabled,
+.form-actions button:disabled,
+.password-form button:disabled,
+.users-table-panel button:disabled,
+.page-header button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.user-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.password-form {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.users-table-wrapper {
+  overflow-x: auto;
+}
+
+.users-table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table-wrapper th,
+.users-table-wrapper td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 13px 10px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.users-table-wrapper th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 800;
+}
+
+.user-identity {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.user-identity div:nth-child(2),
+.user-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-identity strong {
+  color: #111827;
+}
+
+.user-identity span,
+.user-contact span {
+  color: #4b5563;
+}
+
+.user-identity small,
+.user-contact small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.role-pill,
+.status-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.role-pill.admin,
+.role-pill.company_admin {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.role-pill.employee {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.role-pill.client {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.status-pill.actif {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.status-pill.desactive {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.status-pill.archive {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.small-button {
+  border: 0;
+  border-radius: 9px !important;
+  padding: 7px 9px !important;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.small-button.danger {
+  background: #fef3f2 !important;
+  color: #b42318 !important;
+}
+
+.small-button.success {
+  background: #ecfdf3 !important;
+  color: #027a48 !important;
+}
+
+.small-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.users-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.users-pagination span {
+  color: #4b5563;
+  font-weight: 700;
+}
+
+.success-message {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ecfdf3;
+  color: #027a48;
+  border: 1px solid #abefc6;
+}
+
+.error-message {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+@media (max-width: 1100px) {
+  .users-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .users-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .users-filters,
+  .user-form,
+  .password-form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions,
+  .users-filter-actions,
+  .users-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions button,
+  .users-filter-actions button,
+  .users-pagination button {
+    width: 100%;
+  }
+}
