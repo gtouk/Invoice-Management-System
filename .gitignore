@@ -1,6 +1,11 @@
 .env
 backend/.env
 frontend/.env
+.env.prod
+.env.production
+.env.production.local
+frontend/.env.production.local
+backend/.env.production.local
 
 # Dependencies
 node_modules/
@@ -33,5 +38,7 @@ storage/ocr-temp/**
 .vscode/
 
 # Local DB dumps / backups (keep out of Git)
-backups/
+backups/*
+!backups/.gitkeep
 *.sql.bak
+*.dump

@@ -8,6 +8,10 @@ export function ensureDirectoryExists(directoryPath) {
 }
 
 export function getStorageRoot() {
+  if (process.env.STORAGE_ROOT) {
+    return path.resolve(process.env.STORAGE_ROOT);
+  }
+
   return path.resolve(process.cwd(), 'storage');
 }
 
@@ -29,6 +33,23 @@ export function buildBankStatementPrivateRelativePath(companyId, filename) {
     'bank-statements',
     filename
   );
+}
+
+export function buildCompanyLogoRelativePath(companyId, extension = '.png') {
+  const ext = String(extension || '.png').startsWith('.')
+    ? String(extension || '.png').toLowerCase()
+    : `.${String(extension).toLowerCase()}`;
+
+  return path.posix.join(
+    'public',
+    'companies',
+    String(companyId),
+    `logo${ext}`
+  );
+}
+
+export function getCompanyLogoApiPath(companyId) {
+  return `/api/public/companies/${companyId}/logo`;
 }
 
 export function resolveStoragePath(storedPath) {

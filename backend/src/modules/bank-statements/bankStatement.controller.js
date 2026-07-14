@@ -1,5 +1,6 @@
 import { successResponse } from '../../utils/response.util.js';
 import * as bankStatementService from './bankStatement.service.js';
+import { sendFileDownload } from '../../services/storage.service.js';
 
 export async function listBankStatements(req, res, next) {
   try {
@@ -239,7 +240,7 @@ export async function downloadBankStatementFile(req, res, next) {
       }
     );
 
-    return res.download(result.absolutePath, result.fileName);
+    return sendFileDownload(res, result);
   } catch (error) {
     next(error);
   }

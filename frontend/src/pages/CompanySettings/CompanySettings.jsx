@@ -31,7 +31,7 @@ function buildFileUrl(fileUrl) {
   const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   const backendBaseUrl = apiBaseUrl.replace(/\/api$/, '');
 
-  return `${backendBaseUrl}${fileUrl}`;
+  return `${backendBaseUrl}${fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`}`;
 }
 
 export default function CompanySettings() {
@@ -39,6 +39,7 @@ export default function CompanySettings() {
   const [settings, setSettings] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [logoVersion, setLogoVersion] = useState(0);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -71,6 +72,8 @@ export default function CompanySettings() {
         bank_account: data.bank_account || '',
         bank_routing_number: data.bank_routing_number || ''
       });
+
+      setLogoVersion(Date.now());
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -173,6 +176,7 @@ export default function CompanySettings() {
       setSettings(data);
       setLogoFile(null);
       setLogoPreview(null);
+      setLogoVersion(Date.now());
 
       setMessage('Logo entreprise mis à jour avec succès.');
     } catch (err) {
@@ -185,8 +189,12 @@ export default function CompanySettings() {
     }
   }
 
+  const storedLogoUrl = buildFileUrl(settings?.company_logo_url);
   const logoUrl =
-    logoPreview || buildFileUrl(settings?.company_logo_url);
+    logoPreview ||
+    (storedLogoUrl
+      ? `${storedLogoUrl}${storedLogoUrl.includes('?') ? '&' : '?'}t=${logoVersion || 1}`
+      : null);
 
   return (
     <div className="page-stack company-settings-page">

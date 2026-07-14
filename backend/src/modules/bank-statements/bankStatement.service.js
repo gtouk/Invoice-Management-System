@@ -5,10 +5,18 @@ import * as invoiceRepository from '../invoices/invoice.repository.js';
 import {
   extractTextFromBankStatement,
   extractTransactionsFromText,
-  buildStoredFileUrl,
-  resolveStoredFilePath
+  buildStoredFileUrl
 } from '../../services/bankStatementParser.service.js';
 import { createAuditLog } from '../../utils/audit.util.js';
+import {
+  buildBankStatementPrivateRelativePath
+} from '../../utils/storage.util.js';
+import {
+  deletePrivateFile,
+  getPrivateFile,
+  savePrivateFile
+} from '../../services/storage.service.js';
+import { buildBankStatementStoredFilename } from '../../middlewares/upload.middleware.js';
 import {
   validateBankStatementFilters,
   validateCreateBankStatementPayload,
@@ -120,10 +128,33 @@ export async function importBankStatementFile(
     );
   }
 
+  const storedFilename =
+    file.filename || buildBankStatementStoredFilename(file.originalname);
+  const relativePath = buildBankStatementPrivateRelativePath(
+    companyId,
+    storedFilename
+  );
+
+  let buffer = file.buffer || null;
+
+  if (!buffer && file.path) {
+    buffer = fs.readFileSync(file.path);
+  }
+
+  if (!buffer) {
+    throw createHttpError('Impossible de lire le fichier uploadé.', 422);
+  }
+
+  await savePrivateFile({
+    relativePath,
+    buffer,
+    contentType: file.mimetype || 'application/octet-stream'
+  });
+
   return bankStatementRepository.createBankStatement({
     company_id: companyId,
     file_name: file.originalname,
-    file_url: buildStoredFileUrl(file.filename, companyId),
+    file_url: relativePath || buildStoredFileUrl(storedFilename, companyId),
     source_type: sourceType,
     imported_by: userId || null,
     notes: payload.notes || null
@@ -156,12 +187,9 @@ export async function processBankStatement(id, companyId) {
     );
   }
 
-  const filePath = resolveStoredFilePath(
-    statement.file_url,
-    statement.company_id || companyId
-  );
+  const privateFile = await getPrivateFile({ relativePath: statement.file_url });
 
-  if (!filePath || !fs.existsSync(filePath)) {
+  if (!privateFile?.buffer?.length) {
     throw createHttpError(
       'Fichier du relevé introuvable sur le serveur.',
       404
@@ -170,7 +198,7 @@ export async function processBankStatement(id, companyId) {
 
   const fileName = statement.file_url.toLowerCase();
 
-  let mimeType = 'application/pdf';
+  let mimeType = privateFile.contentType || 'application/pdf';
 
   if (fileName.endsWith('.png')) {
     mimeType = 'image/png';
@@ -180,7 +208,10 @@ export async function processBankStatement(id, companyId) {
     mimeType = 'image/jpeg';
   }
 
-  const rawText = await extractTextFromBankStatement(filePath, mimeType);
+  const rawText = await extractTextFromBankStatement(
+    privateFile.buffer,
+    mimeType
+  );
 
   if (!rawText || rawText.trim().length === 0) {
     await bankStatementRepository.updateBankStatementStatus(
@@ -261,14 +292,7 @@ export async function deleteBankStatement(id, companyId = null) {
     );
 
   if (statement.file_url) {
-    const filePath = resolveStoredFilePath(
-    statement.file_url,
-    statement.company_id || companyId
-  );
-
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    await deletePrivateFile({ relativePath: statement.file_url });
   }
 
   return deletedStatement;
@@ -811,12 +835,9 @@ export async function downloadBankStatementFile(id, user, auditContext = {}) {
     throw createHttpError('Aucun fichier associé à ce relevé.', 404);
   }
 
-  const absolutePath = resolveStoredFilePath(
-    statement.file_url,
-    statement.company_id
-  );
+  const privateFile = await getPrivateFile({ relativePath: statement.file_url });
 
-  if (!absolutePath || !fs.existsSync(absolutePath)) {
+  if (!privateFile?.buffer?.length) {
     throw createHttpError('Fichier du relevé introuvable sur le serveur.', 404);
   }
 
@@ -835,7 +856,10 @@ export async function downloadBankStatementFile(id, user, auditContext = {}) {
   });
 
   return {
-    absolutePath,
-    fileName: statement.file_name || path.basename(absolutePath)
+    buffer: privateFile.buffer,
+    contentType: privateFile.contentType || 'application/octet-stream',
+    fileName:
+      statement.file_name ||
+      path.basename(privateFile.relativePath || statement.file_url)
   };
 }

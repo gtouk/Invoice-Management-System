@@ -12,10 +12,12 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.3",
     "bcryptjs": "latest",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
+    "express-rate-limit": "^8.5.2",
     "helmet": "latest",
     "jsonwebtoken": "latest",
     "morgan": "latest",

@@ -158,4 +158,6 @@ docker compose down -v   # attention : efface les données Postgres
 - [`docs/SMTP_SETUP.md`](docs/SMTP_SETUP.md) — configuration email
 - [`docs/TESTING.md`](docs/TESTING.md) — lancer les tests automatisés
 - [`docs/QA_CHECKLIST.md`](docs/QA_CHECKLIST.md) — checklist qualité manuelle
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — déploiement V1 bêta / prod
+- [`docs/FREE_DEPLOYMENT.md`](docs/FREE_DEPLOYMENT.md) — déploiement gratuit (Vercel + Render + Supabase)
 - [`docs/START_HERE.md`](docs/START_HERE.md) — démarrage projet

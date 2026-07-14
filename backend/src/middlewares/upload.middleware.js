@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import { getStorageRoot } from '../utils/storage.util.js';
+import { getStorageProvider } from '../services/storage.service.js';
 
 function ensureDirectoryExists(directoryPath) {
   if (!fs.existsSync(directoryPath)) {
@@ -8,19 +10,7 @@ function ensureDirectoryExists(directoryPath) {
   }
 }
 
-const BANK_STATEMENTS_DIR = path.resolve(
-  process.cwd(),
-  'storage',
-  'bank-statements'
-);
-
-const COMPANY_DIR = path.resolve(
-  process.cwd(),
-  'storage',
-  'company'
-);
-
-ensureDirectoryExists(BANK_STATEMENTS_DIR);
+const COMPANY_DIR = path.resolve(getStorageRoot(), 'company');
 ensureDirectoryExists(COMPANY_DIR);
 
 const allowedBankStatementMimeTypes = [
@@ -35,7 +25,7 @@ const allowedLogoMimeTypes = [
   'image/webp'
 ];
 
-function sanitizeBaseName(originalName) {
+export function sanitizeUploadBaseName(originalName) {
   const originalExtension = path.extname(originalName).toLowerCase();
 
   return path
@@ -44,10 +34,15 @@ function sanitizeBaseName(originalName) {
     .slice(0, 80);
 }
 
+export function buildBankStatementStoredFilename(originalName) {
+  const originalExtension = path.extname(originalName).toLowerCase();
+  const safeBaseName = sanitizeUploadBaseName(originalName);
+  return `${Date.now()}-${safeBaseName}${originalExtension}`;
+}
+
 function getCompanyBankStatementDir(companyId) {
   const directory = path.resolve(
-    process.cwd(),
-    'storage',
+    getStorageRoot(),
     'private',
     'companies',
     String(companyId),
@@ -58,41 +53,38 @@ function getCompanyBankStatementDir(companyId) {
   return directory;
 }
 
-const bankStatementStorage = multer.diskStorage({
-  destination(req, file, cb) {
-    try {
-      if (!req.user?.company_id) {
-        cb(new Error('Aucune entreprise associée à cet utilisateur.'), null);
-        return;
+function createBankStatementStorage() {
+  // Memory storage for cloud providers so files can be uploaded via storage.service.
+  if (getStorageProvider() === 'supabase') {
+    return multer.memoryStorage();
+  }
+
+  return multer.diskStorage({
+    destination(req, file, cb) {
+      try {
+        if (!req.user?.company_id) {
+          cb(new Error('Aucune entreprise associée à cet utilisateur.'), null);
+          return;
+        }
+
+        cb(null, getCompanyBankStatementDir(req.user.company_id));
+      } catch (error) {
+        cb(error, null);
       }
+    },
 
-      cb(null, getCompanyBankStatementDir(req.user.company_id));
-    } catch (error) {
-      cb(error, null);
+    filename(req, file, cb) {
+      cb(null, buildBankStatementStoredFilename(file.originalname));
     }
-  },
+  });
+}
 
-  filename(req, file, cb) {
-    const originalExtension = path.extname(file.originalname).toLowerCase();
-    const safeBaseName = sanitizeBaseName(file.originalname);
-    const uniqueName = `${Date.now()}-${safeBaseName}${originalExtension}`;
+function createCompanyLogoStorage() {
+  // Always memory: logos go through savePublicFile (local disk or Supabase).
+  return multer.memoryStorage();
+}
 
-    cb(null, uniqueName);
-  }
-});
-
-const companyLogoStorage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, COMPANY_DIR);
-  },
-
-  filename(req, file, cb) {
-    const originalExtension = path.extname(file.originalname).toLowerCase();
-    const uniqueName = `company-logo-${Date.now()}${originalExtension}`;
-
-    cb(null, uniqueName);
-  }
-});
+const companyLogoStorage = createCompanyLogoStorage();
 
 function bankStatementFileFilter(req, file, cb) {
   if (!allowedBankStatementMimeTypes.includes(file.mimetype)) {
@@ -119,7 +111,7 @@ function companyLogoFileFilter(req, file, cb) {
 }
 
 export const uploadBankStatement = multer({
-  storage: bankStatementStorage,
+  storage: createBankStatementStorage(),
   fileFilter: bankStatementFileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024

@@ -1,6 +1,4 @@
 import * as invoiceRepository from './invoice.repository.js';
-import fs from 'fs';
-import path from 'path';
 import { sendEmailWithAttachment } from '../../services/email.service.js';
 import * as companySettingsRepository from '../company-settings/companySettings.repository.js';
 import { generateInvoicePdf as generateInvoicePdfFile } from '../../services/pdf.service.js';
@@ -8,11 +6,10 @@ import {
   validateCreateInvoicePayload,
   validateInvoiceFilters
 } from './invoice.validation.js';
+import { getInvoiceDownloadApiPath } from '../../utils/storage.util.js';
 import {
-  getInvoiceDownloadApiPath,
-  resolveInvoicePdfAbsolutePath,
-  resolveStoragePath
-} from '../../utils/storage.util.js';
+  getInvoicePdfFile
+} from '../../services/storage.service.js';
 import { createAuditLog } from '../../utils/audit.util.js';
 import * as clientPortalRepository from '../client-portal/clientPortal.repository.js';
 
@@ -328,9 +325,9 @@ export async function getInvoicePdf(id, companyId) {
     throw createHttpError('Facture introuvable.', 404);
   }
 
-  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+  const pdfFile = await getInvoicePdfFile(invoice);
 
-  if (!absolutePath) {
+  if (!pdfFile) {
     throw createHttpError(
       'PDF non disponible pour cette facture.',
       404
@@ -381,9 +378,9 @@ export async function downloadInvoicePdf(id, user, auditContext = {}) {
     throw createHttpError('Facture introuvable.', 404);
   }
 
-  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+  const pdfFile = await getInvoicePdfFile(invoice);
 
-  if (!absolutePath || !fs.existsSync(absolutePath)) {
+  if (!pdfFile?.buffer?.length) {
     throw createHttpError('PDF non disponible pour cette facture.', 404);
   }
 
@@ -402,7 +399,8 @@ export async function downloadInvoicePdf(id, user, auditContext = {}) {
   });
 
   return {
-    absolutePath,
+    buffer: pdfFile.buffer,
+    contentType: pdfFile.contentType || 'application/pdf',
     fileName: `${invoice.invoice_number || invoice.id}.pdf`
   };
 }
@@ -498,23 +496,18 @@ async function ensureInvoicePdfForEmail(invoice, companyId) {
   }
 
   let current = invoice;
-  let absolutePath = resolveInvoicePdfAbsolutePath(current);
+  let pdfFile = await getInvoicePdfFile(current);
 
-  if (!absolutePath) {
-    const generated = await generateInvoicePdf(current.id, companyId);
+  if (!pdfFile?.buffer?.length) {
+    await generateInvoicePdf(current.id, companyId);
     current = await invoiceRepository.findInvoiceById(current.id, companyId);
-    absolutePath = resolveInvoicePdfAbsolutePath(current);
-
-    if (!absolutePath) {
-      // Fallback if generate only returned a path without updating disk resolution
-      absolutePath = resolveStoragePath(generated?.pdf_url);
-    }
+    pdfFile = await getInvoicePdfFile(current);
   }
 
-  if (!absolutePath || !fs.existsSync(absolutePath)) {
+  if (!pdfFile?.buffer?.length) {
     return {
       invoice: current,
-      absolutePath: null,
+      pdfBuffer: null,
       hasPdf: false,
       attachmentName: `facture-${current.invoice_number}.pdf`,
       relativePath: current?.pdf_url || null
@@ -523,10 +516,10 @@ async function ensureInvoicePdfForEmail(invoice, companyId) {
 
   return {
     invoice: current,
-    absolutePath,
+    pdfBuffer: pdfFile.buffer,
     hasPdf: true,
     attachmentName: `facture-${current.invoice_number}.pdf`,
-    relativePath: current.pdf_url || path.relative(path.resolve(process.cwd()), absolutePath)
+    relativePath: current.pdf_url || pdfFile.relativePath || null
   };
 }
 
@@ -558,7 +551,7 @@ export async function prepareInvoiceEmail(invoiceId, companyId, user = null) {
 
   let pdfMeta = {
     invoice,
-    absolutePath: null,
+    pdfBuffer: null,
     hasPdf: false,
     attachmentName: invoice.invoice_number
       ? `facture-${invoice.invoice_number}.pdf`
@@ -726,9 +719,9 @@ export async function sendInvoiceEmail(
     throw createHttpError('Le contenu de l’email est obligatoire.', 422);
   }
 
-  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+  const pdfFile = await getInvoicePdfFile(invoice);
 
-  if (!absolutePath || !fs.existsSync(absolutePath)) {
+  if (!pdfFile?.buffer?.length) {
     throw createHttpError(
       "Le PDF de cette facture n'est pas disponible.",
       409
@@ -738,8 +731,7 @@ export async function sendInvoiceEmail(
   const attachmentName =
     prepared.attachment_name || `facture-${invoice.invoice_number}.pdf`;
   const attachmentRelativePath =
-    invoice.pdf_url ||
-    path.relative(path.resolve(process.cwd()), absolutePath);
+    invoice.pdf_url || pdfFile.relativePath || null;
 
   const userId = user?.id || null;
 
@@ -757,7 +749,8 @@ export async function sendInvoiceEmail(
       attachments: [
         {
           filename: attachmentName,
-          path: absolutePath
+          content: pdfFile.buffer,
+          contentType: pdfFile.contentType || 'application/pdf'
         }
       ]
     });

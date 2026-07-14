@@ -83,6 +83,7 @@ Overrides possibles via variables d’environnement :
 
 - **Login entreprise suspendue** : test auto seulement si `TEST_SUSPENDED_*` est fourni ; sinon checklist manuelle.
 - **Envoi email SMTP** (`POST .../email/send`) : non automatisé (dépend SMTP). Tester manuellement avec Mailtrap.
+- **Storage Supabase** : les tests CI/local utilisent `STORAGE_PROVIDER=local`. Valider Supabase manuellement (voir [`FREE_DEPLOYMENT.md`](./FREE_DEPLOYMENT.md)).
 - **CI GitHub Actions** : frontend unitaires seulement. Les tests backend d’intégration nécessitent Postgres + comptes démo (à lancer en local / avant démo).
 - Si BeautyDemo n’a pas de facture, certains cas cross-company sont skippés (assert soft).
 

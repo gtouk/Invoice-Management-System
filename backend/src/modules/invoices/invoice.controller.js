@@ -1,5 +1,6 @@
 import { successResponse } from '../../utils/response.util.js';
 import * as invoiceService from './invoice.service.js';
+import { sendFileDownload } from '../../services/storage.service.js';
 
 export async function listInvoices(req, res, next) {
   try {
@@ -104,7 +105,7 @@ export async function downloadInvoicePdf(req, res, next) {
       userAgent: req.headers['user-agent'] || null
     });
 
-    return res.download(result.absolutePath, result.fileName);
+    return sendFileDownload(res, result);
   } catch (error) {
     next(error);
   }

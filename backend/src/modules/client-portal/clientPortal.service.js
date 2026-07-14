@@ -1,9 +1,6 @@
 import * as clientPortalRepository from './clientPortal.repository.js';
-import fs from 'fs';
-import {
-  resolveInvoicePdfAbsolutePath,
-  getInvoiceDownloadApiPath
-} from '../../utils/storage.util.js';
+import { getInvoiceDownloadApiPath } from '../../utils/storage.util.js';
+import { getInvoicePdfFile } from '../../services/storage.service.js';
 
 function createHttpError(message, statusCode = 400) {
   const error = new Error(message);
@@ -103,9 +100,9 @@ export async function getInvoice(userId, invoiceId) {
 
 export async function getInvoicePdf(userId, invoiceId) {
   const invoice = await getInvoice(userId, invoiceId);
-  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+  const pdfFile = await getInvoicePdfFile(invoice);
 
-  if (!absolutePath) {
+  if (!pdfFile?.buffer?.length) {
     throw createHttpError('PDF non disponible pour cette facture.', 404);
   }
 
@@ -118,14 +115,15 @@ export async function getInvoicePdf(userId, invoiceId) {
 
 export async function downloadInvoicePdf(userId, invoiceId) {
   const invoice = await getInvoice(userId, invoiceId);
-  const absolutePath = resolveInvoicePdfAbsolutePath(invoice);
+  const pdfFile = await getInvoicePdfFile(invoice);
 
-  if (!absolutePath || !fs.existsSync(absolutePath)) {
+  if (!pdfFile?.buffer?.length) {
     throw createHttpError('PDF non disponible pour cette facture.', 404);
   }
 
   return {
-    absolutePath,
+    buffer: pdfFile.buffer,
+    contentType: pdfFile.contentType || 'application/pdf',
     fileName: `${invoice.invoice_number || invoice.id}.pdf`
   };
 }

@@ -1,14 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import { PassThrough } from 'stream';
 import PDFDocument from 'pdfkit';
 import * as companySettingsRepository from '../modules/company-settings/companySettings.repository.js';
 import { buildInvoicePrivateRelativePath } from '../utils/storage.util.js';
-
-function ensureDirectoryExists(directoryPath) {
-  if (!fs.existsSync(directoryPath)) {
-    fs.mkdirSync(directoryPath, { recursive: true });
-  }
-}
+import {
+  getCompanyLogoFile,
+  savePrivateFile
+} from './storage.service.js';
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('en-CA', {
@@ -115,24 +114,44 @@ function drawFooter(doc, settings) {
     );
 }
 
-function drawCompanyHeader(doc, settings) {
-  const logoPath = getBackendStoragePath(settings?.company_logo_url);
+async function drawCompanyHeader(doc, settings) {
+  let logoDrawn = false;
 
-  if (logoPath && fs.existsSync(logoPath)) {
-    try {
-      doc.image(logoPath, 45, 40, {
+  try {
+    const logoFile = await getCompanyLogoFile({
+      companyId: settings?.company_id || null,
+      storedUrl: settings?.company_logo_url || settings?.company_logo_path || null
+    });
+
+    if (logoFile?.buffer?.length) {
+      doc.image(logoFile.buffer, 45, 40, {
         fit: [85, 65],
         align: 'left',
         valign: 'center'
       });
-    } catch {
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(12)
-        .fillColor('#111827')
-        .text(settings?.company_name || 'Company', 45, 45, { width: 150 });
+      logoDrawn = true;
     }
-  } else {
+  } catch {
+    logoDrawn = false;
+  }
+
+  if (!logoDrawn) {
+    const logoPath = getBackendStoragePath(settings?.company_logo_url);
+    if (logoPath && fs.existsSync(logoPath)) {
+      try {
+        doc.image(logoPath, 45, 40, {
+          fit: [85, 65],
+          align: 'left',
+          valign: 'center'
+        });
+        logoDrawn = true;
+      } catch {
+        logoDrawn = false;
+      }
+    }
+  }
+
+  if (!logoDrawn) {
     doc
       .font('Helvetica-Bold')
       .fontSize(12)
@@ -673,8 +692,6 @@ export async function generateInvoicePdf(invoice) {
     invoice.company_id,
     invoice.id
   );
-  const filePath = path.resolve(process.cwd(), 'storage', relativePath);
-  ensureDirectoryExists(path.dirname(filePath));
 
   const fileName = `${invoice.invoice_number || invoice.id}.pdf`;
 
@@ -683,10 +700,13 @@ export async function generateInvoicePdf(invoice) {
     margin: 45
   });
 
-  const stream = fs.createWriteStream(filePath);
-  doc.pipe(stream);
+  const chunks = [];
+  const passThrough = new PassThrough();
+  passThrough.on('data', (chunk) => chunks.push(chunk));
 
-  drawCompanyHeader(doc, settings);
+  doc.pipe(passThrough);
+
+  await drawCompanyHeader(doc, settings);
   drawInvoiceMeta(doc, invoice);
   drawClientBlock(doc, invoice);
 
@@ -704,13 +724,22 @@ export async function generateInvoicePdf(invoice) {
   doc.end();
 
   await new Promise((resolve, reject) => {
-    stream.on('finish', resolve);
-    stream.on('error', reject);
+    passThrough.on('finish', resolve);
+    passThrough.on('error', reject);
+    doc.on('error', reject);
+  });
+
+  const buffer = Buffer.concat(chunks);
+
+  const saved = await savePrivateFile({
+    relativePath,
+    buffer,
+    contentType: 'application/pdf'
   });
 
   return {
     fileName,
-    filePath,
+    filePath: saved.absolutePath || null,
     pdfUrl: relativePath,
     downloadUrl: `/api/invoices/${invoice.id}/download`
   };

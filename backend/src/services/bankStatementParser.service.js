@@ -1035,9 +1035,7 @@ export function extractTransactionsFromText(rawText) {
   return extractFallbackFinancialTransactions(rawText);
 }
 
-async function extractPdfText(filePath) {
-  const fileBuffer = fs.readFileSync(filePath);
-
+async function extractPdfText(fileBuffer) {
   const pdfParseModule = await import('pdf-parse');
 
   if (typeof pdfParseModule.PDFParse === 'function') {
@@ -1060,45 +1058,25 @@ async function extractPdfText(filePath) {
     return result?.text || '';
   }
 
-  const requiredModule = require('pdf-parse');
-
-  if (typeof requiredModule === 'function') {
-    const result = await requiredModule(fileBuffer);
-    return result?.text || '';
-  }
-
-  if (typeof requiredModule.default === 'function') {
-    const result = await requiredModule.default(fileBuffer);
-    return result?.text || '';
-  }
-
-  if (typeof requiredModule.PDFParse === 'function') {
-    const parser = new requiredModule.PDFParse({
-      data: fileBuffer
-    });
-
-    try {
-      const result = await parser.getText();
-      return result?.text || '';
-    } finally {
-      if (typeof parser.destroy === 'function') {
-        await parser.destroy();
-      }
-    }
-  }
-
-  throw new Error(
-    'Module pdf-parse invalide : aucune fonction de parsing PDF disponible.'
-  );
+  throw new Error('Impossible de parser le PDF du relevé.');
 }
 
-export async function extractTextFromBankStatement(filePath, mimeType) {
-  if (!fs.existsSync(filePath)) {
-    throw new Error('Fichier du relevé introuvable.');
+export async function extractTextFromBankStatement(source, mimeType) {
+  let fileBuffer = null;
+
+  if (Buffer.isBuffer(source)) {
+    fileBuffer = source;
+  } else if (typeof source === 'string') {
+    if (!fs.existsSync(source)) {
+      throw new Error('Fichier du relevé introuvable.');
+    }
+    fileBuffer = fs.readFileSync(source);
+  } else {
+    throw new Error('Source fichier du relevé invalide.');
   }
 
   if (mimeType === 'application/pdf') {
-    return extractPdfText(filePath);
+    return extractPdfText(fileBuffer);
   }
 
   throw new Error(

@@ -1,5 +1,6 @@
 import { successResponse } from '../../utils/response.util.js';
 import * as clientPortalService from './clientPortal.service.js';
+import { sendFileDownload } from '../../services/storage.service.js';
 
 export async function getProfile(req, res, next) {
   try {
@@ -66,7 +67,7 @@ export async function downloadInvoicePdf(req, res, next) {
       req.params.id
     );
 
-    return res.download(result.absolutePath, result.fileName);
+    return sendFileDownload(res, result);
   } catch (err) {
     next(err);
   }
